@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block head %}
+{% endblock %}
+
+{% block title %}
+    index
+{% endblock %}
+
+{% block content %}
+
+{% if person %}
+    <h2>Person Details</h2>
+    <p>id: {{ person.id }}</p>
+    <p>Imie: {{ person.first_name }}</p>
+    <p>Nazwisko: {{ person.last_name }}</p>
+    <p>Email: {{ person.email }}</p>
+    <p>Hasło: {{ person.password_hash }}</p>
+    <p>Rola: {{ person.role }}</p>
+    <p>Utworzono: {{ person.created_at }}</p>
+    <p>Ostatnia zmiana: {{ person.updated_at }}</p>
+    
+    <p>Utworzono: {{ czas }}</p>
+    <p>Utworzono data: {{ data }}</p>
+    <p>Utworzono czas: {{ godzina }}</p>
+
+    <p>Jak długo ma konto: {{ jak_dlugo }}dni.</p>
+
+{% elif error %}
+    <h2>Error</h2>
+    <p>{{ error }}</p>
+{% else %}
+    <h2>Form</h2>
+    <form action="/form" method="post">
+        <label for="first_name">First name:</label><br>
+        <input type="text" id="first_name" name="first_name"><br><br>
+        <label for="last_name">Last name:</label><br>
+        <input type="text" id="last_name" name="last_name"><br><br>
+        <input type="submit" value="Submit">
+    </form>
+{% endif %}
+
+
+
+{% endblock %}

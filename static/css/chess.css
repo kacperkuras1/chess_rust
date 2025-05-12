@@ -1,0 +1,6 @@
+* {
+    box-sizing: border-box;
+}
+#board {
+    width: 600px;
+}
