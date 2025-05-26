@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block head %}
+{% endblock %}
+
+{% block title %}
+    index
+{% endblock %}
+
+{% block content %}
+
+<h1>Register</h1>
+<form method="POST" action="/register">
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" required>
+    <br>
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username" required>
+    <br>
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" required>
+    <br>
+    <label for="password_confirmation">Confirm Password:</label>
+    <input type="password" id="password_confirmation" name="password_confirmation" required>
+    <br>
+    <label for="elo">Poziom gry:</label>
+    <select id="elo" name="elo">
+        <option value="600">Początkujący</option>
+        <option value="800">Średniozaawansowany</option>
+        <option value="1000">Zaawansowany</option>
+    </select>
+    <input type="submit" value="Register">
+</form>
+
+{% endblock %}

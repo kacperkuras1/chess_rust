@@ -1,3 +1,6 @@
+use actix_web_flash_messages::{FlashMessagesFramework, storage::CookieMessageStore};
+use actix_session::{SessionMiddleware, storage::CookieSessionStore};
+use actix_web::cookie::Key;
 use actix_web::{App, HttpServer, web};
 use sqlx::mysql::MySqlPoolOptions;
 use actix_web::middleware::Logger;
@@ -22,10 +25,13 @@ async fn main() -> std::io::Result<()> {
     dotenv().ok();
     env_logger::init_from_env(Env::default().default_filter_or("info"));
 
+
+
     let game_state = web::Data::new(Arc::new(Mutex::new(ws::GameState::default())));
-
-
-
+    let secret_key = Key::generate();
+    let secret_key_data = web::Data::new(secret_key.clone());
+    let flash_messages = FlashMessagesFramework::builder(CookieMessageStore::builder(secret_key).build())
+        .build();
     let addr = env::var("ADDRESS").expect("ADDRESS not set!");
     let port = env::var("PORT").expect("PORT not set!");
 
@@ -38,15 +44,21 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            
             .wrap(Logger::default())
+            .wrap(flash_messages.clone())
+            .wrap(SessionMiddleware::new(CookieSessionStore::default(), secret_key_data.get_ref().clone()))
             .app_data(web::Data::new(db_pool.clone()))
             .app_data(game_state.clone())
             .service(Files::new("/static", "./static").show_files_listing())
             .service(routes::index_page)
-            .service(routes::form_page)
-            .service(routes::form_handler)
             .service(routes::chess_page)
             .service(ws::websocket_handler)
+            .service(routes::login_page)
+            .service(routes::login_handler)
+            .service(routes::register_page)
+            .service(routes::register_handler)
+            .service(routes::logout)
     })
     .bind(format!("{}:{}", addr, port))?
     .run()

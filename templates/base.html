@@ -4,10 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/css/style.css">
+    <script src="/static/js/script.js" defer></script>
     {% block head %} {% endblock %}
     <title>{% block title %} {% endblock %}</title>
 </head>
 <body>
+    {% if flash_messages %}
+        {% for msg in flash_messages %}
+            <div class="flash-message flash-{{ msg.0 }}">
+                <span class="flash-close-btn">&times;</span>
+                {{ msg.1 }}
+            </div>
+        {% endfor %}
+    {% endif %}
     {% block content %} {% endblock %}
 </body>
 </html>

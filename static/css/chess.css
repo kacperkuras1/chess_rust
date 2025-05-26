@@ -3,4 +3,5 @@
 }
 #board {
     width: 600px;
+    user-select: none;
 }

@@ -14,4 +14,3 @@ function onDrop (source) {
   }
   ws.send(JSON.stringify(move));
 }
-

@@ -1,51 +1,122 @@
+
 use sqlx::MySqlPool;
-use time::PrimitiveDateTime;
-use chrono::{NaiveDateTime, DateTime, Utc, TimeZone};
+use chrono::{DateTime, Utc, TimeZone};
+use time::OffsetDateTime;
 
+use crate::models::{User, RegisterUser, LoginUser};
 
-use crate::models::User;
+pub enum CreateUserError {
+    UsernameExists,
+    EmailExists,
+    DatabaseError(sqlx::Error),
+}
 
-fn convert_opt_primitive_to_chrono(opt: Option<PrimitiveDateTime>) -> Option<DateTime<Utc>> {
-    opt.and_then(|primitive| {
-        let date = primitive.date();
-        let time = primitive.time();
+impl From<sqlx::Error> for CreateUserError {
+    fn from(e: sqlx::Error) -> Self {
+        CreateUserError::DatabaseError(e)
+    }
+}
 
-        let naive = NaiveDateTime::new(
-            chrono::NaiveDate::from_ymd_opt(date.year(), date.month() as u32, date.day() as u32)?,
-            chrono::NaiveTime::from_hms_nano_opt(
-                time.hour() as u32,
-                time.minute() as u32,
-                time.second() as u32,
-                time.nanosecond(),
-            )?,
-        );
+pub enum LoginUserError{
+    UserDoesNotExist,
+    UserBanned,
+    UserSuspended,
+    DatabaseError(sqlx::Error),
+}
 
-        Some(Utc.from_utc_datetime(&naive))
-    })
+impl From<sqlx::Error> for LoginUserError {
+    fn from(e: sqlx::Error) -> Self {
+        LoginUserError::DatabaseError(e)
+    }
 }
 
 
-pub async fn get_user(pool: &MySqlPool, first_name: &String, last_name: &String) -> Result<Option<User>, sqlx::Error> {
-    let result = sqlx::query!(
-        "SELECT id, first_name, last_name, email, role, password_hash, created_at, updated_at 
-        FROM users 
-        WHERE first_name = ? AND last_name = ?", 
-        first_name, 
-        last_name
+fn convert_opt_offsetdatetime_to_chrono(opt: OffsetDateTime) -> Option<DateTime<Utc>> {
+    // let naive = NaiveDateTime::new(
+    //     chrono::NaiveDate::from_ymd_opt(opt.year().into(), opt.month() as u32, opt.day().into())?,
+    //     chrono::NaiveTime::from_hms_nano_opt(
+    //         opt.hour().into(),
+    //         opt.minute().into(),
+    //         opt.second().into(),
+    //         opt.nanosecond().into(),
+    //     )?,
+    // );
+
+    let timestamp = opt.unix_timestamp();
+    let nanos = opt.nanosecond();
+
+    Some(Utc.timestamp_opt(timestamp, nanos).single()?)
+}
+
+
+
+pub async fn create_user(pool: &MySqlPool, user: &RegisterUser) -> Result<bool, CreateUserError> {
+    let email_exists = sqlx::query!(
+        "SELECT * FROM users WHERE email = ?",
+        user.email
     )
     .fetch_optional(pool)
     .await?;
-    
-    let user = result.map(|user| User {
-        id: user.id,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        email: user.email,
-        password_hash: user.password_hash,
-        role: user.role,
-        created_at: convert_opt_primitive_to_chrono(user.created_at),
-        updated_at: convert_opt_primitive_to_chrono(user.updated_at),
-    });
 
-    Ok(user)
+    if email_exists.is_some() {
+        return Err(CreateUserError::EmailExists);
+    }
+
+    let username_exists = sqlx::query!(
+        "SELECT * FROM users WHERE username = ?",
+        user.username
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    if username_exists.is_some() {
+        return Err(CreateUserError::UsernameExists);
+    }
+
+    let _result = sqlx::query!(
+        "INSERT INTO users (username, email, password_hash, elo) 
+        VALUES (?, ?, ?, ?)",
+        user.username,
+        user.email,
+        user.password,
+        user.elo,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(true)
+}
+
+
+pub async fn login_user(pool: &MySqlPool, user: &LoginUser) -> Result<User, LoginUserError> {
+    let user = sqlx::query!(
+        "SELECT * FROM users WHERE email = ?",
+        user.email
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    if let Some(user) = user {
+        if user.status == "banned" {
+            return Err(LoginUserError::UserBanned);
+        }
+        else if user.status == "suspended" {
+            return Err(LoginUserError::UserSuspended);
+            
+        }
+        else{
+            return Ok(User {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                password_hash: user.password_hash,
+                elo: user.elo,
+                role: user.role,
+                created_at: convert_opt_offsetdatetime_to_chrono(user.created_at),
+            });
+        }
+    }
+    
+    Err(LoginUserError::UserDoesNotExist)
+
 }

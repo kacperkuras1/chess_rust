@@ -1,12 +1,13 @@
 use actix_web::{web, HttpResponse, Responder, get, post}; 
-use chrono::Utc;
+use actix_web_flash_messages::{FlashMessage, IncomingFlashMessages};
+use actix_session::Session;
 use tera::Tera;
 use lazy_static::lazy_static;
 use sqlx::MySqlPool;
 
 use crate::db;
-use crate::models::{UserForm, User};
-
+use crate::models::{RegisterUser, LoginUser};
+use crate::auth;
 
 lazy_static! {
     static ref TEMPLATES: Tera = {
@@ -20,60 +21,191 @@ lazy_static! {
     };
 }
 
+pub fn redirect(location: &str) -> HttpResponse {
+    HttpResponse::Found()
+        .insert_header(("Location", location))
+        .finish()
+}
+
 
 #[get("/")]
-async fn index_page() -> impl Responder {
-    let mut context = tera::Context::new();
-    context.insert("name", "przejdz do formularz");
-    HttpResponse::Ok().body(TEMPLATES.render("index.html", &context).unwrap())
+async fn index_page(flash_messages: IncomingFlashMessages, session: Session) -> impl Responder {
+    let user_id = session.get::<i32>("user_id").unwrap();
+    if user_id.is_some() {
+        let mut context = tera::Context::new();
+        let messages = flash_messages.iter().map(|msg| {
+            match msg.level() {
+                actix_web_flash_messages::Level::Error => ("error", msg.content()),
+                actix_web_flash_messages::Level::Info => ("info", msg.content()),
+                actix_web_flash_messages::Level::Success => ("success", msg.content()),
+                actix_web_flash_messages::Level::Warning => ("warning", msg.content()),
+                actix_web_flash_messages::Level::Debug => ("debug", msg.content()),
+            }
+            }).collect::<Vec<_>>();
+        context.insert("flash_messages", &messages);
+        HttpResponse::Ok().body(TEMPLATES.render("index.html", &context).unwrap())
+    } else {
+        return redirect("/login")
+    }
 }
 
-
-#[get("/person")]
-async fn form_page() -> impl Responder {
-    let mut context = tera::Context::new();
-    context.insert("name", "formularz do wysłania");
-    HttpResponse::Ok().body(TEMPLATES.render("person.html", &context).unwrap())
-}
-
-#[get("/chess/{color}")]
-async fn chess_page(path: web::Path<String>) -> impl Responder {
-    let mut context = tera::Context::new();
-    let color = path.into_inner();
-    context.insert("color", &color);
-    HttpResponse::Ok().body(TEMPLATES.render("chess.html", &context).unwrap())
-}
-
-
-#[post("/form")]
-async fn form_handler(form: web::Form<UserForm>, db_pool: web::Data<MySqlPool>) -> impl Responder {
+#[get("/login")]
+async fn login_page(flash_messages: IncomingFlashMessages, session: Session) -> impl Responder {
+    let user_id = session.get::<i32>("user_id").unwrap();
+    if user_id.is_some() {
+        return redirect("/")
+    }
     
-    let first_name = form.first_name.clone();
-    let last_name = form.last_name.clone();
+    let mut context = tera::Context::new();
+    let messages = flash_messages.iter().map(|msg| {
+        match msg.level() {
+            actix_web_flash_messages::Level::Error => ("error", msg.content()),
+            actix_web_flash_messages::Level::Info => ("info", msg.content()),
+            actix_web_flash_messages::Level::Success => ("success", msg.content()),
+            actix_web_flash_messages::Level::Warning => ("warning", msg.content()),
+            actix_web_flash_messages::Level::Debug => ("debug", msg.content()),
+        }
+    }).collect::<Vec<_>>();
+    context.insert("flash_messages", &messages);
+    HttpResponse::Ok().body(TEMPLATES.render("login.html", &context).unwrap())
+}
 
-    let person: Result<Option<User>, sqlx::Error> = db::get_user(&db_pool, &first_name, &last_name).await;
-
+#[get("/register")]
+async fn register_page(flash_messages: IncomingFlashMessages, session: Session) -> impl Responder {
+    let user_id = session.get::<i32>("user_id").unwrap();
+    if user_id.is_some() {
+        return redirect("/")
+    }
 
     let mut context = tera::Context::new();
-    match person {
-        Ok(Some(user)) => {
-            context.insert("person", &user);
-            if let Some(dt) = user.created_at {
-                context.insert("czas", &dt.format("%Y-%m-%d %H:%M:%S").to_string());
-                context.insert("data", &dt.date_naive().format("%Y-%m-%d").to_string());
-                context.insert("godzina", &dt.time().format("%H:%M:%S").to_string());
-                context.insert("jak_dlugo", &Utc::now().signed_duration_since(&dt).num_days());
+    let messages = flash_messages.iter().map(|msg| {
+        match msg.level() {
+            actix_web_flash_messages::Level::Error => ("error", msg.content()),
+            actix_web_flash_messages::Level::Info => ("info", msg.content()),
+            actix_web_flash_messages::Level::Success => ("success", msg.content()),
+            actix_web_flash_messages::Level::Warning => ("warning", msg.content()),
+            actix_web_flash_messages::Level::Debug => ("debug", msg.content()),
+        }
+    }).collect::<Vec<_>>();
+    context.insert("flash_messages", &messages);
+    HttpResponse::Ok().body(TEMPLATES.render("register.html", &context).unwrap())
+}
+
+#[post("/login")]
+async fn login_handler(form: web::Form<LoginUser>, db_pool: web::Data<MySqlPool>, session: Session) -> impl Responder {
+    
+    let user_id = session.get::<i32>("user_id").unwrap();
+    if user_id.is_some() {
+        return redirect("/")
+    }
+
+    let user = db::login_user(&db_pool, &form).await;
+
+    match user {
+        Ok(user) => {
+            if auth::verify_password(&form.password, &user.password_hash) {
+                session.insert("user_id", user.id).unwrap();
+                FlashMessage::success("Zalogowano pomyślnie!").send();
+                return redirect("/chess/white");
+            } else {
+                FlashMessage::warning("Niepoprawne hasło! Spróbuj ponownie.").send();
+                return redirect("/login");
             }
         }
-        Ok(None) => {
-            context.insert("error", "Nie znaleziono użytkownika");
+        Err(db::LoginUserError::UserDoesNotExist) => {
+            FlashMessage::warning("Nie znaleziono użytkownika o podanym emailu.").send();
+            return redirect("/login");
         }
-        Err(e) => {
-            eprintln!("DB error: {:?}", e);
-            context.insert("error", "Błąd podczas zapytania do bazy");
+
+        
+        Err(db::LoginUserError::UserBanned) => {
+            FlashMessage::warning("Twoje konto zostało zbanowane.").send();
+            return redirect("/login");
+        }
+        Err(db::LoginUserError::UserSuspended) => {
+            FlashMessage::warning("Twoje konto zostało zawieszone.").send();
+            return redirect("/login");
+        }
+        Err(_) => {
+            FlashMessage::error("Wystąpił błąd podczas logowania. Spróbuj ponownie później.").send();
+            return redirect("/login");
+        }
+    }
+}
+
+#[post("/register")]
+async fn register_handler(form: web::Form<RegisterUser>, db_pool: web::Data<MySqlPool>, session: Session) -> impl Responder {
+
+    let user_id = session.get::<i32>("user_id").unwrap();
+    if user_id.is_some() {
+        return redirect("/")
+    }
+
+    let mut user = RegisterUser{
+        username: form.username.clone(),
+        email: form.email.clone(),
+        password: form.password.clone(),
+        password_confirmation: form.password_confirmation.clone(),
+        elo: form.elo,
+    };
+
+    if ![600, 800, 1000].contains(&user.elo) {
+        user.elo = 600;
+    }
+
+    if user.password != user.password_confirmation {
+        FlashMessage::warning("Hasła nie są takie same!").send();
+        return redirect("/register");
+    }
+
+    user.password = auth::hash_password(&user.password).unwrap();
+
+    match db::create_user(&db_pool, &user).await{
+        Ok(_) =>{
+            FlashMessage::success("Rejestracja zakończona sukcesem! Możesz teraz się zalogować.").send();
+            return redirect("/login");
+        }
+        Err(db::CreateUserError::EmailExists) =>{
+            FlashMessage::warning("Podany Email jest zajęty.").send();
+            return redirect("/register");
+        }
+        Err(db::CreateUserError::UsernameExists) =>{
+            FlashMessage::warning("Podana nazwa użytkownika jest już zajęta.").send();
+            return redirect("/register");
+        }
+        Err(_) => {
+            FlashMessage::error("Wystąpił błąd podczas rejestracji. Spróbuj ponownie później.").send();
+            return redirect("/register");
         }
     }
 
+}
 
-    HttpResponse::Ok().body(TEMPLATES.render("person.html", &context).unwrap())
+#[get("/logout")]
+async fn logout(session: Session) -> impl Responder {
+    session.remove("user_id");
+    FlashMessage::info("Zostałeś wylogowany.").send();
+    redirect("/")
+}
+
+#[get("/chess/{color}")]
+async fn chess_page(flash_messages: IncomingFlashMessages, path: web::Path<String>, session: Session) -> impl Responder {
+    let user_id = session.get::<i32>("user_id").unwrap();
+    if user_id.is_none() {
+        return redirect("/")
+    }
+    let mut context = tera::Context::new();
+    let messages = flash_messages.iter().map(|msg| {
+        match msg.level() {
+            actix_web_flash_messages::Level::Error => ("error", msg.content()),
+            actix_web_flash_messages::Level::Info => ("info", msg.content()),
+            actix_web_flash_messages::Level::Success => ("success", msg.content()),
+            actix_web_flash_messages::Level::Warning => ("warning", msg.content()),
+            actix_web_flash_messages::Level::Debug => ("debug", msg.content()),
+        }
+    }).collect::<Vec<_>>();
+    context.insert("flash_messages", &messages);
+    let color = path.into_inner();
+    context.insert("color", &color);
+    HttpResponse::Ok().body(TEMPLATES.render("chess.html", &context).unwrap())
 }
