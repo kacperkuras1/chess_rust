@@ -112,7 +112,7 @@ pub async fn login_user(pool: &MySqlPool, user: &LoginUser) -> Result<User, Logi
                 password_hash: user.password_hash,
                 elo: user.elo,
                 role: user.role,
-                created_at: convert_opt_offsetdatetime_to_chrono(user.created_at),
+                created_at: Some(user.created_at),
             });
         }
     }

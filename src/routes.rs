@@ -29,24 +29,19 @@ pub fn redirect(location: &str) -> HttpResponse {
 
 
 #[get("/")]
-async fn index_page(flash_messages: IncomingFlashMessages, session: Session) -> impl Responder {
-    let user_id = session.get::<i32>("user_id").unwrap();
-    if user_id.is_some() {
-        let mut context = tera::Context::new();
-        let messages = flash_messages.iter().map(|msg| {
-            match msg.level() {
-                actix_web_flash_messages::Level::Error => ("error", msg.content()),
-                actix_web_flash_messages::Level::Info => ("info", msg.content()),
-                actix_web_flash_messages::Level::Success => ("success", msg.content()),
-                actix_web_flash_messages::Level::Warning => ("warning", msg.content()),
-                actix_web_flash_messages::Level::Debug => ("debug", msg.content()),
-            }
-            }).collect::<Vec<_>>();
-        context.insert("flash_messages", &messages);
-        HttpResponse::Ok().body(TEMPLATES.render("index.html", &context).unwrap())
-    } else {
-        return redirect("/login")
-    }
+async fn home_page(flash_messages: IncomingFlashMessages) -> impl Responder {
+    let mut context = tera::Context::new();
+    let messages = flash_messages.iter().map(|msg| {
+        match msg.level() {
+            actix_web_flash_messages::Level::Error => ("error", msg.content()),
+            actix_web_flash_messages::Level::Info => ("info", msg.content()),
+            actix_web_flash_messages::Level::Success => ("success", msg.content()),
+            actix_web_flash_messages::Level::Warning => ("warning", msg.content()),
+            actix_web_flash_messages::Level::Debug => ("debug", msg.content()),
+        }
+        }).collect::<Vec<_>>();
+    context.insert("flash_messages", &messages);
+    HttpResponse::Ok().body(TEMPLATES.render("home.html", &context).unwrap())
 }
 
 #[get("/login")]
@@ -106,7 +101,7 @@ async fn login_handler(form: web::Form<LoginUser>, db_pool: web::Data<MySqlPool>
             if auth::verify_password(&form.password, &user.password_hash) {
                 session.insert("user_id", user.id).unwrap();
                 FlashMessage::success("Zalogowano pomyślnie!").send();
-                return redirect("/chess/white");
+                return redirect("/");
             } else {
                 FlashMessage::warning("Niepoprawne hasło! Spróbuj ponownie.").send();
                 return redirect("/login");

@@ -51,7 +51,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(db_pool.clone()))
             .app_data(game_state.clone())
             .service(Files::new("/static", "./static").show_files_listing())
-            .service(routes::index_page)
+            .service(routes::home_page)
             .service(routes::chess_page)
             .service(ws::websocket_handler)
             .service(routes::login_page)
