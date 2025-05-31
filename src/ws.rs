@@ -29,7 +29,7 @@ struct IncomingMessage(String);
 pub struct MyWebSocket {
     color: String,
     game_state: SharedGameState,
-}
+}   
 
 impl Actor for MyWebSocket {
     type Context = ws::WebsocketContext<Self>;

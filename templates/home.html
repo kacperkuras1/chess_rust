@@ -9,11 +9,24 @@
 
 {% block content %}
 
-<h1><a href="/register">register</a></h1>
-<h1><a href="/login">login</a></h1>
-<h1><a href="/logout">logout</a></h1>
-<h1><a href="/chess/black">black</a></h1>
-<h1><a href="/chess/white">white</a></h1>
+<p>username: {{ user.username }}</p>
+<p>email: {{ user.email }}</p>
+<p>role: {{ user.role }}</p>
+<p>status: {{ user.status }}</p>
+
+<p>elo: {{ user_statistics.elo }}</p>
+<p>max elo: {{ user_statistics.max_elo }}</p>
+<p>games played: {{ user_statistics.games_played }}</p>
+<p>games won: {{ user_statistics.games_won }}</p>
+<p>games lost: {{ user_statistics.games_lost }}</p>
+<p>games drawn: {{ user_statistics.games_drawn }}</p>
+<p>current win streak: {{ user_statistics.current_win_streak }}</p>
+<p>max win streak: {{ user_statistics.max_win_streak }}</p>
+{% if user_statistics.last_game_at %}
+<p>last game at: {{ user_statistics.last_game_at }}</p>
+{% endif %}
+
+<button>Play</button>
 
 
 {% endblock %}

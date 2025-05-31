@@ -6,7 +6,7 @@ use lazy_static::lazy_static;
 use sqlx::MySqlPool;
 
 use crate::db;
-use crate::models::{RegisterUser, LoginUser};
+use crate::models::{RegisterUser, LoginUser, UserStatistics, User};
 use crate::auth;
 
 lazy_static! {
@@ -29,8 +29,20 @@ pub fn redirect(location: &str) -> HttpResponse {
 
 
 #[get("/")]
-async fn home_page(flash_messages: IncomingFlashMessages) -> impl Responder {
+async fn home_page(flash_messages: IncomingFlashMessages, db_pool: web::Data<MySqlPool>, session: Session) -> impl Responder {
+    let user = session.get::<i32>("user_id").unwrap();
+    if user.is_none() {
+        return redirect("/login");
+    }
+
     let mut context = tera::Context::new();
+
+    let user: User = db::get_user_by_id(&db_pool, user.unwrap()).await.unwrap().unwrap();
+    let user_statistics: UserStatistics = db::get_user_statistics(&db_pool, user.id).await.unwrap().unwrap();
+
+    context.insert("user", &user);
+    context.insert("user_statistics", &user_statistics);
+
     let messages = flash_messages.iter().map(|msg| {
         match msg.level() {
             actix_web_flash_messages::Level::Error => ("error", msg.content()),
