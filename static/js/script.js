@@ -18,3 +18,26 @@ for (let i = 0; i < flashMessages.length; i++) {
         closeFlashMessage(flashMessages[i]);
     }, 5000 + 1000 * i);
 }
+
+
+function fetchWithAuth(url, options = {}) {
+  const token = localStorage.getItem('jwt_token');
+  options.headers = {
+    ...options.headers,
+    'Authorization': `Bearer ${token}`,
+  };
+  
+  return fetch(url, options).then(res => {
+    if (res.status === 401) {
+      window.location.href = '/login';
+      return Promise.reject('Unauthorized');
+    }
+    return res;
+  });
+}
+
+fetchWithAuth('/')
+  .then(res => res.json())
+  .then(data => {
+    console.log(data);
+  });

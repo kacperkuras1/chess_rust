@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block head %}
+    <script src="/static/js/login.js" defer></script>
 {% endblock %}
 
 {% block title %}
@@ -10,16 +11,15 @@
 {% block content %}
 
 <h1>Login</h1>
-<form method="POST" action="/login">
+<form id="login-form" action="/login" method="post">
     <label for="email">Email:</label>
     <input type="email" id="email" name="email" required>
     <br>
     <label for="password">Password:</label>
     <input type="password" id="password" name="password" required>
     <br>
-    <input type="submit" value="Login">
+    <button type="submit">Login</button>
 </form>
-
 <p><a href="/register">Zarejestruj się</a></p>
 
 {% endblock %}

@@ -1,9 +1,10 @@
-use actix_web::{web, HttpResponse, Responder, get, post}; 
+use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder}; 
 use actix_web_flash_messages::{FlashMessage, IncomingFlashMessages};
 use actix_session::Session;
 use tera::Tera;
 use lazy_static::lazy_static;
 use sqlx::MySqlPool;
+use actix_web::FromRequest;
 
 use crate::db;
 use crate::models::{RegisterUser, LoginUser, UserStatistics, User};
@@ -100,12 +101,9 @@ async fn register_page(flash_messages: IncomingFlashMessages, session: Session) 
 
 #[post("/login")]
 async fn login_handler(form: web::Form<LoginUser>, db_pool: web::Data<MySqlPool>, session: Session) -> impl Responder {
-    
-    let user_id = session.get::<i32>("user_id").unwrap();
-    if user_id.is_some() {
-        return redirect("/")
-    }
 
+    let form = form.into_inner();
+    
     let user = db::login_user(&db_pool, &form).await;
 
     match user {
@@ -195,8 +193,25 @@ async fn logout(session: Session) -> impl Responder {
     redirect("/")
 }
 
-#[get("/chess/{color}")]
-async fn chess_page(flash_messages: IncomingFlashMessages, path: web::Path<String>, session: Session) -> impl Responder {
+
+#[get("/get_jwt")]
+async fn get_jwt(session: Session) -> impl Responder {
+    if let Ok(Some(user_id)) = session.get::<i32>("user_id") {
+        match auth::create_jwt(user_id) {
+            Ok(token) => return HttpResponse::Ok().json(serde_json::json!({ "token": token })),
+            Err(_) => return HttpResponse::InternalServerError().body("Błąd JWT"),
+        }
+    }
+
+    HttpResponse::Unauthorized().body("Nie jesteś zalogowany")
+}
+
+#[get("/chess")]
+async fn chess_page(flash_messages: IncomingFlashMessages, session: Session) -> impl Responder {
+    
+    
+    print!("\n\n\nDHFJKDHFJKHDJKFHDJKFHDJKFHJKDHFJKDF\n\n\n");
+
     let user_id = session.get::<i32>("user_id").unwrap();
     if user_id.is_none() {
         return redirect("/")
@@ -212,7 +227,5 @@ async fn chess_page(flash_messages: IncomingFlashMessages, path: web::Path<Strin
         }
     }).collect::<Vec<_>>();
     context.insert("flash_messages", &messages);
-    let color = path.into_inner();
-    context.insert("color", &color);
     HttpResponse::Ok().body(TEMPLATES.render("chess.html", &context).unwrap())
 }

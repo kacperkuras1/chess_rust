@@ -1,28 +1,53 @@
 // let btn = document.getElementById('btnSend');
 // btn.addEventListener('click', sendMessage);
 
-const ws = new WebSocket(`ws://localhost:8080/ws/${color}`);
+let ws = null;
 
-ws.onopen = () => {
-  console.log("Połączono z serwerem WebSocket.");
-};
+fetch("/get_jwt")
+  .then(res => {
+    if (!res.ok) {
+      throw new Error("Nie zalogowany");
+    }
+    return res.json();
+  })
+  .then(data => {
+    const token = data.token;
 
-ws.onmessage = (event) => {
-//   log("Odpowiedź z serwera: " + event.data);
-//   console.log(event.data);
-  let temp = JSON.parse(event.data);
-  let move = temp.from + "-" + temp.to;
-  board.move(move);
-  console.log(temp);
-};
+    // "joinujemy" WebSocket dopiero po otrzymaniu tokena
+    ws = new WebSocket(`ws://localhost:8080/ws/${token}`);
 
-ws.onerror = (error) => {
-    console.log("Błąd WebSocket: " + error);
-};
+    ws.onopen = () => {
+      console.log("Połączono z serwerem WebSocket.");
+    };
 
-ws.onclose = () => {
-    console.log("Połączenie zamknięte.");
-};
+    ws.onmessage = (event) => {
+      let temp = JSON.parse(event.data);
+      if (temp.typ === "move"){
+      let move = temp.from + "-" + temp.to;
+      game.move({
+        from: temp.from,
+        to: temp.to,
+        promotion: 'q'
+      });
+      board.move(move);
+      }
+      console.log(temp);
+    };
+
+    ws.onerror = (error) => {
+      console.log("Błąd WebSocket: " + error);
+    };
+
+    ws.onclose = () => {
+      console.log("Połączenie zamknięte.");
+    };
+  })
+  .catch(err => {
+    console.error("Błąd pobierania JWT:", err);
+    window.location.href = "/login";
+  });
+
+
 
 // function sendMessage() {
 //   console.log("Wysyłanie wiadomości...");

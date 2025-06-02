@@ -4,9 +4,13 @@
 <script src="https://unpkg.com/@chrisoakman/chessboard2@0.5.0/dist/chessboard2.min.js"
         integrity="sha384-/KwQCjA1GWovZNV3QDVtvSMDzO4reGgarF/RqHipr7hIUElH3r5zNl9WEPPOBRIF"
         crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.1/chess.js"
+  integrity="sha384-8sJV/krC8iV2g7t0PolQxFVckDtxhfM5gNHNAFPG2ZS/bScudOjfsB8ewhG2xle8"
+  crossorigin="anonymous"></script>
 
 <script src="/static/js/chess.js" defer></script>
 <script src="/static/js/ws.js" defer></script>
+
 
 <link rel="stylesheet"
       href="https://unpkg.com/@chrisoakman/chessboard2@0.5.0/dist/chessboard2.min.css"
@@ -25,12 +29,17 @@
 
 <h1>Szachownica </h1>
 
-<script>let color = "{{ color }}" </script>
-
 <div id="board"></div>
 
 <!-- <input id="msg" placeholder="Wpisz wiadomość"> -->
 <!-- <button id="btnSend">Wyślij</button> -->
+
+<label>Status:</label>
+<div id="gameStatus"></div>
+<label>FEN:</label>
+<div id="gameFEN"></div>
+<label>PGN:</label>
+<div id="gamePGN"></div>
 
 <pre id="log"></pre>
 

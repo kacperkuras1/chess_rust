@@ -1,6 +1,6 @@
 use actix_web_flash_messages::{FlashMessagesFramework, storage::CookieMessageStore};
 use actix_session::{SessionMiddleware, storage::CookieSessionStore};
-use actix_web::cookie::Key;
+use actix_web::cookie::{Key, SameSite};
 use actix_web::{App, HttpServer, web};
 use sqlx::mysql::MySqlPoolOptions;
 use actix_web::middleware::Logger;
@@ -16,6 +16,7 @@ mod models;
 mod routes;
 mod ws;
 mod auth;
+mod game;
 
 
 
@@ -27,7 +28,7 @@ async fn main() -> std::io::Result<()> {
 
 
 
-    let game_state = web::Data::new(Arc::new(Mutex::new(ws::GameState::default())));
+    let game_state = web::Data::new(Arc::new(Mutex::new(game::GameState::default())));
     let secret_key = Key::generate();
     let secret_key_data = web::Data::new(secret_key.clone());
     let flash_messages = FlashMessagesFramework::builder(CookieMessageStore::builder(secret_key).build())
@@ -47,7 +48,12 @@ async fn main() -> std::io::Result<()> {
             
             .wrap(Logger::default())
             .wrap(flash_messages.clone())
-            .wrap(SessionMiddleware::new(CookieSessionStore::default(), secret_key_data.get_ref().clone()))
+            .wrap(
+                SessionMiddleware::builder(CookieSessionStore::default(), secret_key_data.get_ref().clone())
+                    .cookie_secure(false) // jeśli lokalnie
+                    .cookie_same_site(SameSite::Lax)
+                    .build(),
+            )
             .app_data(web::Data::new(db_pool.clone()))
             .app_data(game_state.clone())
             .service(Files::new("/static", "./static").show_files_listing())
@@ -59,6 +65,7 @@ async fn main() -> std::io::Result<()> {
             .service(routes::register_page)
             .service(routes::register_handler)
             .service(routes::logout)
+            .service(routes::get_jwt)
     })
     .bind(format!("{}:{}", addr, port))?
     .run()
