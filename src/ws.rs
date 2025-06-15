@@ -1,36 +1,27 @@
 use actix::prelude::*;
 use actix::{Actor, Addr, AsyncContext, Handler, Message, StreamHandler};
-use actix_web::{get, web, HttpRequest, HttpResponse,  error::ErrorUnauthorized};
+use actix_session::{Session, SessionExt};
+use actix_web::{HttpRequest, HttpResponse, error::ErrorUnauthorized, get, web};
 use actix_web_actors::ws;
 use serde::{Deserialize, Serialize};
-use actix_session::{Session, SessionExt};
+use serde_json::json;
+use sqlx::MySqlPool;
 use std::path;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use sqlx::MySqlPool;
-use serde_json::json;
 
-
-use crate::models::{User, UserStatistics};
-use crate::game::{Player, Game, GameState, SharedGameState, GameStatus};
-use crate::db;
 use crate::auth;
-
-
-
+use crate::db;
+use crate::game::{Game, GameState, GameStatus, Player, SharedGameState};
+use crate::models::{User, UserStatistics};
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(tag = "msg_type")]  // "tag" wybiera wariant wg pola "msg_type"
+#[serde(tag = "msg_type")] // "tag" wybiera wariant wg pola "msg_type"
 enum ClientMessage {
     #[serde(rename = "move")]
-    Move {
-        from: String,
-        to: String,
-    },
+    Move { from: String, to: String },
     #[serde(rename = "chat")]
-    Chat {
-        message: String,
-    },
+    Chat { message: String },
     // Możesz dodać więcej wariantów np.:
     #[serde(other)]
     Unknown,
@@ -44,7 +35,7 @@ pub struct ChessSession {
     pub username: String,
     pub elo: i32,
     game_state: SharedGameState,
-}   
+}
 
 impl Actor for ChessSession {
     type Context = ws::WebsocketContext<Self>;
@@ -52,10 +43,11 @@ impl Actor for ChessSession {
     fn started(&mut self, ctx: &mut Self::Context) {
         let addr = ctx.address();
 
-        println!("Nowy gracz dołączył: user_id = {}, elo = {}\n", self.user_id, self.elo);
+        println!(
+            "Nowy gracz dołączył: user_id = {}, elo = {}\n",
+            self.user_id, self.elo
+        );
 
-
-        
         // Tworzymy nowego gracza
         let new_player = Player {
             user_id: self.user_id,
@@ -69,11 +61,7 @@ impl Actor for ChessSession {
         // Czy ktoś już czeka?
         if let Some(opponent) = state.queue.pop() {
             // Stwórz nową grę
-            let game = Game {
-                white: opponent.clone(),
-                black: new_player.clone(),
-                status: GameStatus::InProgress,
-            };
+            let game = Game::new(opponent.clone(), new_player.clone());
 
             state.games.push(game);
 
@@ -124,9 +112,11 @@ impl Actor for ChessSession {
         state.queue.retain(|p| p.user_id != self.user_id);
 
         // 2. Znajdź grę, w której uczestniczył
-        if let Some(index) = state.games.iter().position(|g| {
-            g.white.user_id == self.user_id || g.black.user_id == self.user_id
-        }) {
+        if let Some(index) = state
+            .games
+            .iter()
+            .position(|g| g.white.user_id == self.user_id || g.black.user_id == self.user_id)
+        {
             let game = state.games.remove(index);
 
             // 3. Ustal kto był przeciwnikiem
@@ -150,8 +140,6 @@ impl Actor for ChessSession {
             println!("Gracz {} rozłączył się, gra zakończona", self.user_id);
         }
     }
-
-
 }
 
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ChessSession {
@@ -163,33 +151,103 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ChessSession {
 
         match msg {
             ws::Message::Text(text) => {
-                // Spróbuj sparsować ruch
                 let parsed = serde_json::from_str::<ClientMessage>(&text);
                 if parsed.is_err() {
                     ctx.text("Niepoprawny format JSON.");
                     return;
                 }
 
-                let move_msg = parsed.unwrap();
-                let serialized = serde_json::to_string(&move_msg).unwrap();
+                match parsed.unwrap() {
+                    ClientMessage::Move { from, to } => {
+                        let mut state = self.game_state.lock().unwrap();
 
-                let state = self.game_state.lock().unwrap();
+                        if let Some(game) = state.games.iter_mut().find(|g| {
+                            g.white.user_id == self.user_id || g.black.user_id == self.user_id
+                        }) {
+                            match game.validate_and_play_move(self.user_id, &from, &to) {
+                                Ok(()) => {
+                                    let opponent = if game.white.user_id == self.user_id {
+                                        &game.black
+                                    } else {
+                                        &game.white
+                                    };
 
-                // Znajdź grę, w której uczestniczy ten gracz
-                if let Some(game) = state.games.iter().find(|g| {
-                    g.white.user_id == self.user_id || g.black.user_id == self.user_id
-                }) {
-                    // Znajdź przeciwnika
-                    let opponent = if game.white.user_id == self.user_id {
-                        &game.black
-                    } else {
-                        &game.white
-                    };
+                                    let msg = json!({
+                                        "msg_type": "move",
+                                        "from": from,
+                                        "to": to,
+                                    });
 
-                    // Wyślij ruch do przeciwnika
-                    opponent.addr.do_send(IncomingMessage(serialized));
-                } else {
-                    ctx.text("Nie znaleziono gry.");
+                                    opponent.addr.do_send(IncomingMessage(msg.to_string()));
+
+                                    // Sprawdź status gry po ruchu
+                                    if game.status != GameStatus::InProgress {
+                                        let (white_msg, black_msg) = match game.status {
+                                            GameStatus::WhiteWin => (
+                                                json!({ "msg_type": "game_status", "status": "win" }),
+                                                json!({ "msg_type": "game_status", "status": "lose" }),
+                                            ),
+                                            GameStatus::BlackWin => (
+                                                json!({ "msg_type": "game_status", "status": "lose" }),
+                                                json!({ "msg_type": "game_status", "status": "win" }),
+                                            ),
+                                            GameStatus::Draw => (
+                                                json!({ "msg_type": "game_status", "status": "draw" }),
+                                                json!({ "msg_type": "game_status", "status": "draw" }),
+                                            ),
+                                            _ => return, // nie powinno się zdarzyć
+                                        };
+
+                                        game.white
+                                            .addr
+                                            .do_send(IncomingMessage(white_msg.to_string()));
+                                        game.black
+                                            .addr
+                                            .do_send(IncomingMessage(black_msg.to_string()));
+                                    }
+                                }
+                                Err((reason, fen)) => {
+                                    ctx.text(
+                                        json!({
+                                            "msg_type": "invalid_move",
+                                            "reason": reason,
+                                            "fen": fen,
+                                        })
+                                        .to_string(),
+                                    );
+                                }
+                            }
+                        } else {
+                            ctx.text("Nie znaleziono gry.");
+                        }
+                    }
+
+                    ClientMessage::Chat { message } => {
+                        let state = self.game_state.lock().unwrap();
+
+                        if let Some(game) = state.games.iter().find(|g| {
+                            g.white.user_id == self.user_id || g.black.user_id == self.user_id
+                        }) {
+                            let opponent = if game.white.user_id == self.user_id {
+                                &game.black
+                            } else {
+                                &game.white
+                            };
+
+                            let msg = json!({
+                                "msg_type": "chat",
+                                "message": message,
+                            });
+
+                            opponent.addr.do_send(IncomingMessage(msg.to_string()));
+                        } else {
+                            ctx.text("Nie znaleziono gry.");
+                        }
+                    }
+
+                    ClientMessage::Unknown => {
+                        ctx.text("Nieznany typ wiadomości.");
+                    }
                 }
             }
 
@@ -198,7 +256,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ChessSession {
                 ctx.close(reason);
                 ctx.stop();
             }
-
             _ => {}
         }
     }
@@ -212,17 +269,22 @@ impl Handler<IncomingMessage> for ChessSession {
 }
 
 #[get("/ws/{token}")]
-async fn websocket_handler(req: HttpRequest, path: web::Path<String>, stream: web::Payload, db_pool: web::Data<MySqlPool>,  data: web::Data<SharedGameState>) -> actix_web::Result<HttpResponse> {
+async fn websocket_handler(
+    req: HttpRequest,
+    path: web::Path<String>,
+    stream: web::Payload,
+    db_pool: web::Data<MySqlPool>,
+    data: web::Data<SharedGameState>,
+) -> actix_web::Result<HttpResponse> {
     print!("WebSocket connection request received\n");
 
     // let session = req.get_session();
 
     print!("HOW TO KILL MYSELF");
 
-
     // if session.get::<i32>("user_id").unwrap().is_none() {
-        // print!("RUCHAM CI MATKETY KURWA JEBANEA");
-        // return Ok(HttpResponse::Unauthorized().finish());
+    // print!("RUCHAM CI MATKETY KURWA JEBANEA");
+    // return Ok(HttpResponse::Unauthorized().finish());
     // }
 
     print!("CHUJJJJJJJJJJJJJJJJJJJJ");
@@ -235,7 +297,6 @@ async fn websocket_handler(req: HttpRequest, path: web::Path<String>, stream: we
     match auth::verify_jwt(&token) {
         Ok(token_data) => {
             user_id = token_data.claims.sub;
-
         }
         Err(err) => {
             println!("\n\n\nJWT błąd: {:?}", err);
@@ -267,7 +328,10 @@ async fn websocket_handler(req: HttpRequest, path: web::Path<String>, stream: we
             }
         }
         Ok(None) => {
-            println!("Nie znaleziono użytkownika w bazie danych: user_id = {}", user_id);
+            println!(
+                "Nie znaleziono użytkownika w bazie danych: user_id = {}",
+                user_id
+            );
             Ok(HttpResponse::InternalServerError().finish())
         }
         Err(e) => {

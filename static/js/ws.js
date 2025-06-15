@@ -49,8 +49,8 @@ fetch("/get_jwt")
             board.position('start');
             game.reset();
             console.log("Gra rozpoczęta, kolor:", message_json.color);
-            if (message_json.color === "black") {
-              canDrag = false;
+            if (message_json.color === "white") {
+              canDrag = true;
             }
             hideOverlay();
             document.getElementById("opponent-name").innerHTML = message_json.opponent_username + " (" + message_json.opponent_elo + ")";
@@ -65,6 +65,10 @@ fetch("/get_jwt")
             showOverlay("draw");
             break;
         }
+      }
+      else if (message_json.msg_type === "invalid_move") {
+        board.position(message_json.fen);
+        canDrag = true;
       }
       console.log(message_json);
     };
