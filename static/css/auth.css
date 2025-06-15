@@ -1,0 +1,146 @@
+/* static/style.css */
+
+:root {
+  --bg-dark: #0b0b0c;
+  --bg-panel: #151617;
+  --text-main: #f5f5f5;
+  --text-muted: #aaa;
+  --green-accent: #00a76f;
+  --green-hover: #00915f;
+  --input-bg: #1e1f20;
+  --border-color: #2e2f30;
+  --radius: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.container {
+  background-color: var(--bg-panel);
+  padding: 2rem;
+  border-radius: var(--radius);
+  box-shadow: 0 0 30px rgba(0, 255, 153, 0.08);
+  width: 100%;
+  max-width: 420px;
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 1.75rem;
+  color: #ffffff;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+  display: block;
+}
+
+input, select {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  background-color: var(--input-bg);
+  color: var(--text-main);
+  font-size: 1rem;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--green-accent);
+  box-shadow: 0 0 0 2px rgba(0, 167, 111, 0.3);
+}
+
+input::placeholder {
+  color: #666;
+}
+
+button {
+  padding: 0.75rem;
+  border: none;
+  background-color: var(--green-accent);
+  color: white;
+  font-weight: 600;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 1rem;
+}
+
+button:hover {
+  background-color: var(--green-hover);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 2rem 0 1rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px dashed #444;
+}
+
+.divider:not(:empty)::before {
+  margin-right: .75em;
+}
+.divider:not(:empty)::after {
+  margin-left: .75em;
+}
+
+.link-button {
+  display: block;
+  text-align: center;
+  padding: 0.75rem;
+  border: 1px solid var(--green-accent);
+  color: var(--green-accent);
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.link-button:hover {
+  background-color: var(--green-accent);
+  color: white;
+}
+
+.invalid {
+  border: 1px solid #ff4d4d !important;
+  box-shadow: 0 0 5px rgba(255, 77, 77, 0.6) !important;
+}
+
+.valid {
+  border: 1px solid #00c676 !important;
+  box-shadow: 0 0 5px rgba(0, 198, 118, 0.5) !important;
+}

@@ -1,22 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/static/images/favicon.ico">
     <link rel="stylesheet" href="/static/css/style.css">
     <script src="/static/js/script.js" defer></script>
+    {% if logged_in %}
+        <link rel="stylesheet" href="/static/css/style_logged_in.css">
+        <script src="/static/js/script_logged_in.js" defer></script>
+    {% endif %}
     {% block head %} {% endblock %}
     <title>{% block title %} {% endblock %}</title>
 </head>
+
 <body>
     {% if flash_messages %}
-        {% for msg in flash_messages %}
-            <div class="flash-message flash-{{ msg.0 }}">
-                <span class="flash-close-btn">&times;</span>
-                {{ msg.1 }}
+    {% for msg in flash_messages %}
+    <div class="flash-message flash-{{ msg.0 }}">
+        <span class="flash-close-btn">&times;</span>
+        {{ msg.1 }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% if logged_in %}
+    <nav class="navbar">
+        <div class="navbar-logo">
+            <a href="/"><img src="/static/images/niechesscom-logo.png" alt="nie chess.com logo" /></a>
+        </div>
+        <div class="navbar-menu">
+            <a href="/play"><div class="nav-item">Zagraj</div></a>
+            <div class="nav-item dropdown">
+                Menu
+                <div class="dropdown-content">
+                    <a href="#">Cos 1</a>
+                    <a href="#">Cos 2</a>
+                    <a href="#">Cos 3</a>
+                </div>
             </div>
-        {% endfor %}
+        </div>
+
+        <div class="navbar-user" id="navbarUser">
+            <div class="username">
+                {% if username %}
+                    {{ username }}
+                {% endif %}
+            </div>
+            <div class="profile-pic-placeholder"></div>
+            <div class="user-dropdown">
+                <a href="#">Profil</a>
+                <a href="#">Ustawienia</a>
+                <a href="logout">Wyloguj się</a>
+            </div>
+        </div>
+    </nav>
     {% endif %}
     {% block content %} {% endblock %}
 </body>
+
 </html>

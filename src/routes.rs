@@ -42,6 +42,7 @@ async fn home_page(flash_messages: IncomingFlashMessages, db_pool: web::Data<MyS
     let user_statistics: UserStatistics = db::get_user_statistics(&db_pool, user.id).await.unwrap().unwrap();
 
     context.insert("user", &user);
+    context.insert("username", &user.username);
     context.insert("user_statistics", &user_statistics);
 
     let messages = flash_messages.iter().map(|msg| {
@@ -54,6 +55,7 @@ async fn home_page(flash_messages: IncomingFlashMessages, db_pool: web::Data<MyS
         }
         }).collect::<Vec<_>>();
     context.insert("flash_messages", &messages);
+    context.insert("logged_in", &true);
     HttpResponse::Ok().body(TEMPLATES.render("home.html", &context).unwrap())
 }
 
@@ -75,6 +77,7 @@ async fn login_page(flash_messages: IncomingFlashMessages, session: Session) -> 
         }
     }).collect::<Vec<_>>();
     context.insert("flash_messages", &messages);
+    context.insert("logged_in", &false);
     HttpResponse::Ok().body(TEMPLATES.render("login.html", &context).unwrap())
 }
 
@@ -96,6 +99,7 @@ async fn register_page(flash_messages: IncomingFlashMessages, session: Session) 
         }
     }).collect::<Vec<_>>();
     context.insert("flash_messages", &messages);
+    context.insert("logged_in", &false);
     HttpResponse::Ok().body(TEMPLATES.render("register.html", &context).unwrap())
 }
 
@@ -206,16 +210,18 @@ async fn get_jwt(session: Session) -> impl Responder {
     HttpResponse::Unauthorized().body("Nie jesteś zalogowany")
 }
 
-#[get("/chess")]
-async fn chess_page(flash_messages: IncomingFlashMessages, session: Session) -> impl Responder {
+#[get("/play")]
+async fn play_page(flash_messages: IncomingFlashMessages,  db_pool: web::Data<MySqlPool>, session: Session) -> impl Responder {
     
     
     print!("\n\n\nDHFJKDHFJKHDJKFHDJKFHDJKFHJKDHFJKDF\n\n\n");
 
     let user_id = session.get::<i32>("user_id").unwrap();
-    if user_id.is_none() {
-        return redirect("/")
-    }
+    let user = match user_id {
+        Some(id) => db::get_user_by_id(&db_pool, id).await.unwrap().unwrap(),
+        None => return redirect("/login"),
+    };
+    let user_statistics = db::get_user_statistics(&db_pool, user.id).await.unwrap().unwrap();
     let mut context = tera::Context::new();
     let messages = flash_messages.iter().map(|msg| {
         match msg.level() {
@@ -227,5 +233,9 @@ async fn chess_page(flash_messages: IncomingFlashMessages, session: Session) -> 
         }
     }).collect::<Vec<_>>();
     context.insert("flash_messages", &messages);
+    context.insert("logged_in", &true);
+    context.insert("username", &user.username);
+    context.insert("elo", &user_statistics.elo);
+
     HttpResponse::Ok().body(TEMPLATES.render("chess.html", &context).unwrap())
 }

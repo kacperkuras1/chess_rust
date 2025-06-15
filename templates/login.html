@@ -1,25 +1,33 @@
 {% extends "base.html" %}
 
 {% block head %}
-    <script src="/static/js/login.js" defer></script>
+<!-- <script src="/static/js/login.js" defer></script> -->
+<link rel="stylesheet" href="/static/css/auth.css">
 {% endblock %}
 
 {% block title %}
-    index
+index
 {% endblock %}
 
 {% block content %}
 
-<h1>Login</h1>
-<form id="login-form" action="/login" method="post">
-    <label for="email">Email:</label>
-    <input type="email" id="email" name="email" required>
-    <br>
-    <label for="password">Password:</label>
-    <input type="password" id="password" name="password" required>
-    <br>
-    <button type="submit">Login</button>
-</form>
-<p><a href="/register">Zarejestruj się</a></p>
+<div class="container">
+    <h2>Zaloguj się</h2>
+    <form action="/login" method="POST">
+      <div>
+        <label for="email">Email lub nazwa użytkownika</label>
+        <input type="text" id="email" name="email" placeholder="Twój email lub login" required />
+      </div>
+      <div>
+        <label for="password">Hasło</label>
+        <input type="password" id="password" name="password" placeholder="••••••••" required />
+      </div>
+      <button type="submit">Zaloguj się</button>
+    </form>
+
+    <div class="divider">Nie masz konta?</div>
+
+    <a href="/register" class="link-button">Zarejestruj się</a>
+  </div>
 
 {% endblock %}

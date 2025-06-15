@@ -4,6 +4,7 @@ use crate::ws::ChessSession;
 #[derive(Clone)]
 pub struct Player {
     pub user_id: i32,
+    pub username: String,
     pub elo: i32,
     pub addr: Addr<ChessSession>,
 }

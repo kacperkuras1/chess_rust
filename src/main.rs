@@ -58,7 +58,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(game_state.clone())
             .service(Files::new("/static", "./static").show_files_listing())
             .service(routes::home_page)
-            .service(routes::chess_page)
+            .service(routes::play_page)
             .service(ws::websocket_handler)
             .service(routes::login_page)
             .service(routes::login_handler)

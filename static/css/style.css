@@ -1,3 +1,15 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+a{
+    text-decoration: none;
+    color: inherit;
+}
+
 body {
     background-color: black;
     color: white;
@@ -5,10 +17,13 @@ body {
 }
 
 .flash-message {
-    position: relative;
+    position: absolute;
+    top: 70px;
+    width: 80%;
+    right: 10%;
     padding: 15px;
-    margin: 10px 0;
     border-radius: 5px;
+    font-size: 20px;
     opacity: 1;
     transition: opacity 0.2s ease-out;
 }
@@ -49,7 +64,7 @@ body {
     right: 5px;
     color: inherit;
     font-weight: bold;
-    font-size: 20px;
+    font-size: 24px;
     cursor: pointer;
     background: none;
     border: none;

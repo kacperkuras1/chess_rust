@@ -21,17 +21,52 @@ fetch("/get_jwt")
     };
 
     ws.onmessage = (event) => {
-      let temp = JSON.parse(event.data);
-      if (temp.typ === "move"){
-      let move = temp.from + "-" + temp.to;
+      console.log("Otrzymano wiadomość:", event.data);
+      let message_json = JSON.parse(event.data);
+      if (message_json.msg_type === "move"){
+      let move = message_json.from + "-" + message_json.to;
       game.move({
-        from: temp.from,
-        to: temp.to,
+        from: message_json.from,
+        to: message_json.to,
         promotion: 'q'
       });
+      canDrag = true;
+      renderMovesFromPGN(game.pgn());
       board.move(move);
       }
-      console.log(temp);
+      else if (message_json.msg_type === "chat") {
+        get_message(message_json.message);
+        console.log("Otrzymano wiadomość czatu:", message_json.message);
+      }
+      else if (message_json.msg_type === "game_status") {
+        switch (message_json.status) {
+          case "waiting":
+            showOverlay("waiting");
+            break;
+          case "playing":
+            board.orientation(message_json.color);
+            game.clear();
+            board.position('start');
+            game.reset();
+            console.log("Gra rozpoczęta, kolor:", message_json.color);
+            if (message_json.color === "black") {
+              canDrag = false;
+            }
+            hideOverlay();
+            document.getElementById("opponent-name").innerHTML = message_json.opponent_username + " (" + message_json.opponent_elo + ")";
+            break;
+          case "win":
+            showOverlay("win");
+            break;
+          case "lose":
+            showOverlay("lose");
+            break;
+          case "draw":
+            showOverlay("draw");
+            break;
+        }
+      }
+      console.log(message_json);
     };
 
     ws.onerror = (error) => {

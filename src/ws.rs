@@ -20,18 +20,28 @@ use crate::auth;
 
 
 #[derive(Serialize, Deserialize, Debug)]
-struct MessageMove{
-    typ: String,
-    from: String,
-    to: String
+#[serde(tag = "msg_type")]  // "tag" wybiera wariant wg pola "msg_type"
+enum ClientMessage {
+    #[serde(rename = "move")]
+    Move {
+        from: String,
+        to: String,
+    },
+    #[serde(rename = "chat")]
+    Chat {
+        message: String,
+    },
+    // Możesz dodać więcej wariantów np.:
+    #[serde(other)]
+    Unknown,
 }
-
 #[derive(Message)]
 #[rtype(result = "()")]
 struct IncomingMessage(String);
 
 pub struct ChessSession {
     pub user_id: i32,
+    pub username: String,
     pub elo: i32,
     game_state: SharedGameState,
 }   
@@ -44,9 +54,12 @@ impl Actor for ChessSession {
 
         println!("Nowy gracz dołączył: user_id = {}, elo = {}\n", self.user_id, self.elo);
 
+
+        
         // Tworzymy nowego gracza
         let new_player = Player {
             user_id: self.user_id,
+            username: self.username.clone(),
             elo: self.elo,
             addr: addr.clone(),
         };
@@ -66,15 +79,21 @@ impl Actor for ChessSession {
 
             // Wyślij obu graczom informację o starcie gry
             let start_msg = serde_json::json!({
-                "type": "game_start",
-                "color": "white"
+                "msg_type": "game_status",
+                "status": "playing",
+                "color": "white",
+                "opponent_username": new_player.username,
+                "opponent_elo": new_player.elo,
             })
             .to_string();
             opponent.addr.do_send(IncomingMessage(start_msg));
 
             let start_msg = serde_json::json!({
-                "type": "game_start",
-                "color": "black"
+                "msg_type": "game_status",
+                "status": "playing",
+                "color": "black",
+                "opponent_username": opponent.username,
+                "opponent_elo": opponent.elo,
             })
             .to_string();
             addr.do_send(IncomingMessage(start_msg));
@@ -83,7 +102,8 @@ impl Actor for ChessSession {
             state.queue.push(new_player);
 
             let waiting_msg = serde_json::json!({
-                "type": "waiting_for_opponent"
+                "msg_type": "game_status",
+                "status": "waiting",
             })
             .to_string();
             ctx.text(waiting_msg);
@@ -118,8 +138,8 @@ impl Actor for ChessSession {
 
             // 4. Wyślij przeciwnikowi wiadomość o zakończeniu gry
             let info = json!({
-                "type": "game_ended",
-                "reason": "opponent_disconnected"
+                "msg_type": "game_status",
+                "status": "win",
             });
 
             if let Ok(msg_str) = serde_json::to_string(&info) {
@@ -144,7 +164,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ChessSession {
         match msg {
             ws::Message::Text(text) => {
                 // Spróbuj sparsować ruch
-                let parsed = serde_json::from_str::<MessageMove>(&text);
+                let parsed = serde_json::from_str::<ClientMessage>(&text);
                 if parsed.is_err() {
                     ctx.text("Niepoprawny format JSON.");
                     return;
@@ -224,12 +244,14 @@ async fn websocket_handler(req: HttpRequest, path: web::Path<String>, stream: we
     }
 
     let user_stats_result = db::get_user_statistics(&db_pool, user_id).await;
+    let user = db::get_user_by_id(&db_pool, user_id).await;
 
     match user_stats_result {
         Ok(Some(stats)) => {
             println!("User stats retrieved: elo = {}", stats.elo);
             let ws = ChessSession {
                 user_id,
+                username: user.unwrap().unwrap().username,
                 elo: stats.elo,
                 game_state: data.get_ref().clone(),
             };

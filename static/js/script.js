@@ -16,7 +16,7 @@ for (let i = 0; i < flashMessages.length; i++) {
 
     setTimeout(() => {
         closeFlashMessage(flashMessages[i]);
-    }, 5000 + 1000 * i);
+    }, 3000 + 1000 * i);
 }
 
 
