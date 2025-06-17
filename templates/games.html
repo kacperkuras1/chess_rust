@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block head %}
+
+<link rel="stylesheet" href="static/css/games.css">
+
+{% endblock %}
+
+{% block title %}
+Szachy | Historia gier
+{% endblock %}
+
+{% block content %}
+
+
+<main class="history-container">
+  <div class="history-header">
+    <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#00c676" viewBox="0 0 24 24" width="28"
+      height="28">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+
+    Historia gier
+  </div>
+
+  <div class="history-list">
+    {% if games | length > 0 %}
+    {% for game in games %}
+    <div class="history-item">
+      <div class="game-main-info">
+        <div
+          class='result-badge
+              {% if game.result == "win" %}result-win{% elif game.result == "lose" %}result-loss{% else %}result-draw{% endif %}'>
+          {% if game.result == "win" %}Wygrana{% elif game.result == "lose" %}Przegrana{% else %}Remis{% endif %}
+        </div>
+
+        <div class="game-type">
+          {{ game.game_type | default(value="unknown") | capitalize }}
+        </div>
+
+        <div class="user-color" title="Twój kolor">
+          {{ game.player_color | default(value="nieznany") | capitalize }}
+        </div>
+      </div>
+
+      <div class="players-info">
+        <div class="player user" title="Twój ranking {{ game.elo }}">
+          {{ game.username }} (elo {{ game.elo }})
+        </div>
+        <div class="vs">vs</div>
+        <div class="player opponent" title='{{ game.opponent_username | default(value="nieznany") }}'>
+          {{ game.opponent_username | default(value="nieznany") }} (elo {{ game.opponent_elo }})
+        </div>
+      </div>
+
+      <div class="game-details">
+        <div class="duration">
+          {{ game.duration | default(value="00:00:00") }}
+        </div>
+
+        <div class="moves">
+          {{ game.move_count | default(value=0) }} ruchów
+        </div>
+
+        <div class="date">
+          {{ game.started_at | date(format="%Y-%m-%d %H:%M") }}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p>Brak historii gier.</p>
+    {% endif %}
+  </div>
+</main>
+
+{% endblock %}

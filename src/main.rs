@@ -66,6 +66,8 @@ async fn main() -> std::io::Result<()> {
             .service(routes::register_handler)
             .service(routes::logout)
             .service(routes::get_jwt)
+            .service(routes::games_page)
+            .service(routes::statistics_page)
     })
     .bind(format!("{}:{}", addr, port))?
     .run()

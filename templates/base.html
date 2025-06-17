@@ -8,8 +8,8 @@
     <link rel="stylesheet" href="/static/css/style.css">
     <script src="/static/js/script.js" defer></script>
     {% if logged_in %}
-        <link rel="stylesheet" href="/static/css/style_logged_in.css">
-        <script src="/static/js/script_logged_in.js" defer></script>
+    <link rel="stylesheet" href="/static/css/style_logged_in.css">
+    <script src="/static/js/script_logged_in.js" defer></script>
     {% endif %}
     {% block head %} {% endblock %}
     <title>{% block title %} {% endblock %}</title>
@@ -30,7 +30,15 @@
             <a href="/"><img src="/static/images/niechesscom-logo.png" alt="nie chess.com logo" /></a>
         </div>
         <div class="navbar-menu">
-            <a href="/play"><div class="nav-item">Zagraj</div></a>
+            <a href="/play">
+                <div class="nav-item">Zagraj</div>
+            </a>
+            <a href="/games">
+                <div class="nav-item">Historia gier</div>
+            </a>
+            <a href="/statistics">
+                <div class="nav-item">Statystyki</div>
+            </a>
             <div class="nav-item dropdown">
                 Menu
                 <div class="dropdown-content">
@@ -44,7 +52,7 @@
         <div class="navbar-user" id="navbarUser">
             <div class="username">
                 {% if username %}
-                    {{ username }}
+                {{ username }}
                 {% endif %}
             </div>
             <div class="profile-pic-placeholder"></div>

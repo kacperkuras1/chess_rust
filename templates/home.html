@@ -1,32 +1,22 @@
 {% extends "base.html" %}
 
 {% block head %}
+
+<link rel="stylesheet" href="/static/css/home.css">
+
 {% endblock %}
 
 {% block title %}
-    index
+Szachy | Strona główna
 {% endblock %}
 
 {% block content %}
+<main>
+    <h1>Witam nic tu nie ma bo jestem leniwym śmieciem</h1>
+    <h1>Kliknij zagraj żeby grać</h1>
+    <h1>A jak nie to spierdalaj</h1>
 
-<p>username: {{ user.username }}</p>
-<p>email: {{ user.email }}</p>
-<p>role: {{ user.role }}</p>
-<p>status: {{ user.status }}</p>
+    <a href="/play"><button class="btn">Zagraj</button></a>
 
-<p>elo: {{ user_statistics.elo }}</p>
-<p>max elo: {{ user_statistics.max_elo }}</p>
-<p>games played: {{ user_statistics.games_played }}</p>
-<p>games won: {{ user_statistics.games_won }}</p>
-<p>games lost: {{ user_statistics.games_lost }}</p>
-<p>games drawn: {{ user_statistics.games_drawn }}</p>
-<p>current win streak: {{ user_statistics.current_win_streak }}</p>
-<p>max win streak: {{ user_statistics.max_win_streak }}</p>
-{% if user_statistics.last_game_at %}
-<p>last game at: {{ user_statistics.last_game_at }}</p>
-{% endif %}
-
-<a href="/play"><button>Play</button></a>
-
-
+</main>
 {% endblock %}

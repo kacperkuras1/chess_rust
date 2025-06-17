@@ -8,7 +8,14 @@ body {
   flex-direction: column;
 }
 
-h1, h2, h3, h4, h5, h6, p, span {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span {
   color: #ccc;
 }
 
@@ -215,6 +222,7 @@ input[type="submit"]:hover {
   background-color: #00a65e;
   box-shadow: 0 0 16px rgba(0, 166, 94, 1);
 }
+
 .chat-messages {
   display: flex;
   flex-direction: column;
@@ -390,7 +398,7 @@ input[type="submit"]:hover {
 }
 
 
-#overlay-button {
+.overlay-button {
   background-color: #00c676;
   color: #111;
   font-weight: 600;
@@ -400,9 +408,10 @@ input[type="submit"]:hover {
   cursor: pointer;
   box-shadow: 0 0 10px rgba(0, 198, 118, 0.7);
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  margin: 10px;
 }
 
-#overlay-button:hover {
+.overlay-button:hover {
   background-color: #00a65e;
   box-shadow: 0 0 16px rgba(0, 166, 94, 0.9);
 }
@@ -412,6 +421,7 @@ input[type="submit"]:hover {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

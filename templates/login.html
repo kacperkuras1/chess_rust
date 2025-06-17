@@ -1,33 +1,32 @@
 {% extends "base.html" %}
 
 {% block head %}
-<!-- <script src="/static/js/login.js" defer></script> -->
 <link rel="stylesheet" href="/static/css/auth.css">
 {% endblock %}
 
 {% block title %}
-index
+Szachy | Logowanie
 {% endblock %}
 
 {% block content %}
 
 <div class="container">
-    <h2>Zaloguj się</h2>
-    <form action="/login" method="POST">
-      <div>
-        <label for="email">Email lub nazwa użytkownika</label>
-        <input type="text" id="email" name="email" placeholder="Twój email lub login" required />
-      </div>
-      <div>
-        <label for="password">Hasło</label>
-        <input type="password" id="password" name="password" placeholder="••••••••" required />
-      </div>
-      <button type="submit">Zaloguj się</button>
-    </form>
+  <h2>Zaloguj się</h2>
+  <form action="/login" method="POST">
+    <div>
+      <label for="email">Email lub nazwa użytkownika</label>
+      <input type="text" id="email" name="email" placeholder="Twój email lub login" required />
+    </div>
+    <div>
+      <label for="password">Hasło</label>
+      <input type="password" id="password" name="password" placeholder="••••••••" required />
+    </div>
+    <button type="submit">Zaloguj się</button>
+  </form>
 
-    <div class="divider">Nie masz konta?</div>
+  <div class="divider">Nie masz konta?</div>
 
-    <a href="/register" class="link-button">Zarejestruj się</a>
-  </div>
+  <a href="/register" class="link-button">Zarejestruj się</a>
+</div>
 
 {% endblock %}

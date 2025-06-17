@@ -7,7 +7,7 @@ use sqlx::MySqlPool;
 use actix_web::FromRequest;
 
 use crate::db;
-use crate::models::{RegisterUser, LoginUser, UserStatistics, User};
+use crate::models::{RegisterUser, LoginUser, UserStatistics, User, GameSummary};
 use crate::auth;
 
 lazy_static! {
@@ -238,4 +238,69 @@ async fn play_page(flash_messages: IncomingFlashMessages,  db_pool: web::Data<My
     context.insert("elo", &user_statistics.elo);
 
     HttpResponse::Ok().body(TEMPLATES.render("chess.html", &context).unwrap())
+}
+
+#[get("/games")]
+async fn games_page(flash_messages: IncomingFlashMessages,  db_pool: web::Data<MySqlPool>, session: Session) -> impl Responder {
+    
+    let user_id = session.get::<i32>("user_id").unwrap();
+    let user = match user_id {
+        Some(id) => db::get_user_by_id(&db_pool, id).await.unwrap().unwrap(),
+        None => return redirect("/login"),
+    };
+
+    let games = db::get_games_for_player(&db_pool, user.id).await.unwrap();
+
+    for game in &games{
+        print!("\n\n\n{:?}\n\n\n", game);
+    }
+
+    
+
+    let mut context = tera::Context::new();
+    let messages = flash_messages.iter().map(|msg| {
+        match msg.level() {
+            actix_web_flash_messages::Level::Error => ("error", msg.content()),
+            actix_web_flash_messages::Level::Info => ("info", msg.content()),
+            actix_web_flash_messages::Level::Success => ("success", msg.content()),
+            actix_web_flash_messages::Level::Warning => ("warning", msg.content()),
+            actix_web_flash_messages::Level::Debug => ("debug", msg.content()),
+        }
+    }).collect::<Vec<_>>();
+    context.insert("flash_messages", &messages);
+    context.insert("logged_in", &true);
+    context.insert("username", &user.username);
+
+    context.insert("games", &games);
+
+    HttpResponse::Ok().body(TEMPLATES.render("games.html", &context).unwrap())
+}
+
+
+#[get("/statistics")]
+pub async fn statistics_page(flash_messages: IncomingFlashMessages, db_pool: web::Data<MySqlPool>, session: Session) -> impl Responder {
+    let user_id = session.get::<i32>("user_id").unwrap();
+    let user = match user_id {
+        Some(id) => db::get_user_by_id(&db_pool, id).await.unwrap().unwrap(),
+        None => return redirect("/login"),
+    };
+
+    let user_statistics = db::get_user_statistics(&db_pool, user.id).await.unwrap().unwrap();
+
+    let mut context = tera::Context::new();
+    let messages = flash_messages.iter().map(|msg| {
+        match msg.level() {
+            actix_web_flash_messages::Level::Error => ("error", msg.content()),
+            actix_web_flash_messages::Level::Info => ("info", msg.content()),
+            actix_web_flash_messages::Level::Success => ("success", msg.content()),
+            actix_web_flash_messages::Level::Warning => ("warning", msg.content()),
+            actix_web_flash_messages::Level::Debug => ("debug", msg.content()),
+        }
+    }).collect::<Vec<_>>();
+    context.insert("flash_messages", &messages);
+    context.insert("logged_in", &true);
+    context.insert("username", &user.username);
+    context.insert("user_statistics", &user_statistics);
+
+    HttpResponse::Ok().body(TEMPLATES.render("statistics.html", &context).unwrap())
 }

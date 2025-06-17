@@ -1,4 +1,5 @@
-const overlay_btn = document.getElementById("overlay-button");
+const play_again_btn = document.getElementById("overlay-replay-button");
+const home_btn = document.getElementById("overlay-home-button");
 
 const chat_form = document.getElementById('chatForm');
 
@@ -6,10 +7,11 @@ function showOverlay(type) {
     const overlay = document.getElementById("game-overlay");
     const title = document.getElementById("overlay-title");
     const message = document.getElementById("overlay-message");
-    const button = document.getElementById("overlay-button");
+    const buttons = document.querySelectorAll(".overlay-button");
+    console.log("Buttons: ", buttons);
 
     overlay.style.display = "flex";
-    button.style.display = "none";
+    buttons.forEach(button => button.style.display = "none");
 
     switch (type) {
         case "waiting":
@@ -19,17 +21,20 @@ function showOverlay(type) {
         case "win":
             title.innerText = "🎉 Wygrałeś!";
             message.innerText = "Gratulacje! Pokonałeś przeciwnika.";
-            button.style.display = "inline-block";
+            buttons[0].style.display = "inline-block";
+            buttons[1].style.display = "inline-block";
             break;
         case "lose":
             title.innerText = "😞 Przegrałeś";
             message.innerText = "Następnym razem pójdzie lepiej.";
-            button.style.display = "inline-block";
+            buttons[0].style.display = "inline-block";
+            buttons[1].style.display = "inline-block";
             break;
         case "draw":
             title.innerText = "🤝 Remis!";
             message.innerText = "Gra zakończyła się remisem.";
-            button.style.display = "inline-block";
+            buttons[0].style.display = "inline-block";
+            buttons[1].style.display = "inline-block";
             break;
         default:
             overlay.style.display = "none";
@@ -39,8 +44,12 @@ function showOverlay(type) {
 
 
 
-overlay_btn.addEventListener("click", () => {
+play_again_btn.addEventListener("click", () => {
     location.reload();
+});
+
+home_btn.addEventListener("click", () => {
+    window.location.href = "/";
 });
 
 

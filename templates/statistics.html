@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block head %}
+
+<link rel="stylesheet" href="/static/css/statistics.css">
+
+{% endblock %}
+
+{% block title %}
+Szachy | Statystyki
+{% endblock %}
+
+{% block content %}
+<main>
+
+    <main class="stats-container">
+        <div class="stats-header">
+            <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#00c676" viewBox="0 0 24 24"
+                width="28" height="28">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+            </svg>
+            Statystyki gracza
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="label">Rozegrane gry</div>
+                <div class="value">{{ user_statistics.games_played }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Wygrane</div>
+                <div class="value">{{ user_statistics.games_won }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Przegrane</div>
+                <div class="value">{{ user_statistics.games_lost }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Remisy</div>
+                <div class="value">{{ user_statistics.games_drawn }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Aktualna passa</div>
+                <div class="value">{{ user_statistics.current_win_streak }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Maks. passa</div>
+                <div class="value">{{ user_statistics.max_win_streak }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">ELO</div>
+                <div class="value">{{ user_statistics.elo }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Maks. ELO</div>
+                <div class="value">{{ user_statistics.max_elo }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Ostatnia gra</div>
+                <div class="value">
+                    {% if user_statistics.last_game_at %}
+                        {{ user_statistics.last_game_at }}
+                    {% else %}
+                        Brak gier
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+
+
+</main>
+{% endblock %}

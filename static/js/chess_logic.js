@@ -26,10 +26,14 @@ function onDrop(dropEvt) {
       updateStatus()
     })
 
+    const full_pgn = game.history();
+    const last_move = full_pgn[full_pgn.length - 1];
+
     let move = {
       msg_type: 'move',
       from: dropEvt.source,
       to: dropEvt.target,
+      pgn: last_move
     }
     ws.send(JSON.stringify(move));
     renderMovesFromPGN(game.pgn());
@@ -92,38 +96,31 @@ function updateStatus() {
 
 
 function renderMovesFromPGN(pgn) {
-  // Najpierw usuń nagłówki (linie zaczynające się od '[')
   const lines = pgn.split('\n').filter(line => !line.startsWith('[')).join(' ');
-  
-  // Podziel na tokeny po spacji
+
   const tokens = lines.trim().split(/\s+/);
-  
+
   const moves = [];
   let currentMoveNumber = 0;
   let currentWhiteMove = null;
   let currentBlackMove = null;
-  
-  // Przechodzimy token po tokenie
+
   for (let token of tokens) {
-    // Ignoruj puste lub wynik partii (np. 1-0, 0-1, 1/2-1/2)
     if (!token || token.match(/^(1-0|0-1|1\/2-1\/2|\*)$/)) {
       continue;
     }
-    
-    // Jeżeli token jest numerem ruchu (np. "1.", "2."), to aktualizujemy numer ruchu
+
     if (token.endsWith('.')) {
       currentMoveNumber = parseInt(token);
       currentWhiteMove = null;
       currentBlackMove = null;
     } else {
-      // Jeśli nie mamy białego ruchu na ten ruch, to teraz go dodajemy
       if (currentWhiteMove === null) {
         currentWhiteMove = token;
       } else if (currentBlackMove === null) {
         currentBlackMove = token;
       }
-      
-      // Jeśli mamy już ruch biały i czarny, to zapisujemy i zerujemy dla kolejnego ruchu
+
       if (currentWhiteMove !== null && currentBlackMove !== null) {
         moves.push({
           number: currentMoveNumber,
@@ -135,8 +132,7 @@ function renderMovesFromPGN(pgn) {
       }
     }
   }
-  
-  // Jeśli ostatni ruch ma tylko białego (np. gra się zakończyła po ruchu białych)
+
   if (currentWhiteMove !== null && currentBlackMove === null) {
     moves.push({
       number: currentMoveNumber,
@@ -144,8 +140,7 @@ function renderMovesFromPGN(pgn) {
       black: null,
     });
   }
-  
-  // Budujemy HTML
+
   let html = '';
   for (const move of moves) {
     html += `<div class="move-pair">
@@ -154,7 +149,6 @@ function renderMovesFromPGN(pgn) {
       ${move.black ? `<span class="move-black">${move.black}</span>` : ''}
     </div>`;
   }
-  
-  // Wstawiamy do kontenera
+
   document.getElementById('movesList').innerHTML = html;
 }

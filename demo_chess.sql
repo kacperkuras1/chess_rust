@@ -1,32 +1,85 @@
--- phpMyAdmin SQL Dump
--- version 5.2.1
--- https://www.phpmyadmin.net/
+-- MariaDB dump 10.19  Distrib 10.4.32-MariaDB, for Win64 (AMD64)
 --
--- Host: 127.0.0.1
--- Generation Time: Maj 31, 2025 at 07:49 PM
--- Wersja serwera: 10.4.32-MariaDB
--- Wersja PHP: 8.2.12
-
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-START TRANSACTION;
-SET time_zone = "+00:00";
-
+-- Host: localhost    Database: demo_chess
+-- ------------------------------------------------------
+-- Server version	10.4.32-MariaDB
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Database: `demo_chess`
+-- Table structure for table `games`
 --
 
--- --------------------------------------------------------
+DROP TABLE IF EXISTS `games`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `games` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `white_player_id` int(11) NOT NULL,
+  `black_player_id` int(11) NOT NULL,
+  `game_type` enum('normal','blitz') NOT NULL,
+  `result` enum('white_win','black_win','draw') DEFAULT NULL,
+  `status` enum('in_progress','finished') NOT NULL DEFAULT 'in_progress',
+  `started_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `ended_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Struktura tabeli dla tabeli `statistics`
+-- Dumping data for table `games`
 --
 
+LOCK TABLES `games` WRITE;
+/*!40000 ALTER TABLE `games` DISABLE KEYS */;
+INSERT INTO `games` VALUES (1,61,62,'normal','white_win','finished','2025-06-16 23:25:56','2025-06-16 23:26:13'),(2,62,61,'normal','white_win','finished','2025-06-16 23:37:34','2025-06-16 23:37:45'),(3,61,62,'normal','black_win','finished','2025-06-16 23:37:48','2025-06-16 23:38:09'),(4,61,62,'normal','white_win','finished','2025-06-16 23:53:21','2025-06-16 23:53:40'),(5,61,62,'normal','white_win','finished','2025-06-17 02:05:15','2025-06-17 02:05:28'),(6,61,62,'normal','white_win','finished','2025-06-17 02:19:23','2025-06-17 02:19:33'),(7,61,62,'normal','white_win','finished','2025-06-17 02:26:40','2025-06-17 02:27:10');
+/*!40000 ALTER TABLE `games` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `moves`
+--
+
+DROP TABLE IF EXISTS `moves`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `moves` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `game_id` int(11) NOT NULL,
+  `move_number` int(11) NOT NULL,
+  `player_color` enum('black','white') NOT NULL,
+  `pgn_move` varchar(16) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=53 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `moves`
+--
+
+LOCK TABLES `moves` WRITE;
+/*!40000 ALTER TABLE `moves` DISABLE KEYS */;
+INSERT INTO `moves` VALUES (1,1,1,'white','e4','2025-06-16 23:25:58'),(2,1,1,'black','h6','2025-06-16 23:25:59'),(3,1,2,'white','Bc4','2025-06-16 23:26:01'),(4,1,2,'black','h5','2025-06-16 23:26:02'),(5,1,3,'white','Qxh5','2025-06-16 23:26:04'),(6,1,3,'black','g6','2025-06-16 23:26:06'),(7,1,4,'white','Qf3','2025-06-16 23:26:10'),(8,1,4,'black','g5','2025-06-16 23:26:12'),(9,1,5,'white','Qxf7#','2025-06-16 23:26:13'),(10,2,1,'white','e4','2025-06-16 23:37:36'),(11,2,1,'black','e5','2025-06-16 23:37:38'),(12,2,2,'white','Bc4','2025-06-16 23:37:39'),(13,2,2,'black','Na6','2025-06-16 23:37:40'),(14,2,3,'white','Qh5','2025-06-16 23:37:42'),(15,2,3,'black','Nb8','2025-06-16 23:37:44'),(16,2,4,'white','Qxf7#','2025-06-16 23:37:45'),(17,3,1,'white','e4','2025-06-16 23:37:51'),(18,3,1,'black','e5','2025-06-16 23:37:52'),(19,3,2,'white','Bc4','2025-06-16 23:37:56'),(20,3,2,'black','Bc5','2025-06-16 23:37:59'),(21,3,3,'white','Bf1','2025-06-16 23:38:00'),(22,3,3,'black','Qh4','2025-06-16 23:38:02'),(23,3,4,'white','a3','2025-06-16 23:38:07'),(24,3,4,'black','Qxf2#','2025-06-16 23:38:09'),(25,4,1,'white','e4','2025-06-16 23:53:23'),(26,4,1,'black','e5','2025-06-16 23:53:25'),(27,4,2,'white','Bc4','2025-06-16 23:53:26'),(28,4,2,'black','Na6','2025-06-16 23:53:34'),(29,4,3,'white','Qh5','2025-06-16 23:53:36'),(30,4,3,'black','Nb8','2025-06-16 23:53:37'),(31,4,4,'white','Qxf7#','2025-06-16 23:53:40'),(32,5,1,'white','e4','2025-06-17 02:05:17'),(33,5,1,'black','e5','2025-06-17 02:05:18'),(34,5,2,'white','Bc4','2025-06-17 02:05:20'),(35,5,2,'black','Na6','2025-06-17 02:05:21'),(36,5,3,'white','Qh5','2025-06-17 02:05:23'),(37,5,3,'black','Nb8','2025-06-17 02:05:24'),(38,5,4,'white','Qxf7#','2025-06-17 02:05:28'),(39,6,1,'white','e4','2025-06-17 02:19:24'),(40,6,1,'black','e5','2025-06-17 02:19:25'),(41,6,2,'white','Bc4','2025-06-17 02:19:27'),(42,6,2,'black','Na6','2025-06-17 02:19:28'),(43,6,3,'white','Qh5','2025-06-17 02:19:30'),(44,6,3,'black','Nb8','2025-06-17 02:19:32'),(45,6,4,'white','Qxf7#','2025-06-17 02:19:33'),(46,7,1,'white','e4','2025-06-17 02:26:42'),(47,7,1,'black','e5','2025-06-17 02:26:44'),(48,7,2,'white','Bc4','2025-06-17 02:26:46'),(49,7,2,'black','Na6','2025-06-17 02:27:04'),(50,7,3,'white','Qh5','2025-06-17 02:27:06'),(51,7,3,'black','Nb8','2025-06-17 02:27:08'),(52,7,4,'white','Qxf7#','2025-06-17 02:27:10');
+/*!40000 ALTER TABLE `moves` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `statistics`
+--
+
+DROP TABLE IF EXISTS `statistics`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `statistics` (
   `user_id` int(11) NOT NULL DEFAULT 0,
   `games_played` int(11) NOT NULL DEFAULT 0,
@@ -37,139 +90,58 @@ CREATE TABLE `statistics` (
   `max_win_streak` int(11) NOT NULL DEFAULT 0,
   `elo` int(11) NOT NULL DEFAULT 600,
   `max_elo` int(11) NOT NULL DEFAULT 600,
-  `last_game_at` timestamp NULL DEFAULT NULL
+  `last_game_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`user_id`),
+  CONSTRAINT `statistics_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `statistics`
 --
 
-INSERT INTO `statistics` (`user_id`, `games_played`, `games_won`, `games_lost`, `games_drawn`, `current_win_streak`, `max_win_streak`, `elo`, `max_elo`, `last_game_at`) VALUES
-(1, 0, 0, 0, 0, 0, 0, 1000, 1000, NULL),
-(53, 0, 0, 0, 0, 0, 0, 600, 600, NULL),
-(54, 0, 0, 0, 0, 0, 0, 800, 600, NULL),
-(55, 0, 0, 0, 0, 0, 0, 1000, 600, NULL),
-(56, 0, 0, 0, 0, 0, 0, 1000, 1000, NULL),
-(57, 0, 0, 0, 0, 0, 0, 800, 800, NULL),
-(58, 0, 0, 0, 0, 0, 0, 600, 600, NULL);
-
--- --------------------------------------------------------
+LOCK TABLES `statistics` WRITE;
+/*!40000 ALTER TABLE `statistics` DISABLE KEYS */;
+INSERT INTO `statistics` VALUES (61,1,1,0,0,0,0,600,600,'2025-06-17 02:27:10'),(62,1,0,1,0,0,0,600,600,'2025-06-17 02:27:10');
+/*!40000 ALTER TABLE `statistics` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
--- Struktura tabeli dla tabeli `users`
+-- Table structure for table `users`
 --
 
+DROP TABLE IF EXISTS `users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `users` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(32) NOT NULL,
   `email` varchar(124) NOT NULL,
   `password_hash` varchar(256) NOT NULL,
   `role` enum('player','admin','moderator') NOT NULL DEFAULT 'player',
   `status` enum('active','banned','suspended','deleted') NOT NULL DEFAULT 'active',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=63 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `role`, `status`, `created_at`) VALUES
-(1, 'abc', 'abc@xxx.com', 'dsfhksdjhrjkl23hrjkhfjk4h34jkhfsdjkhfjk234h5jkr43hjk5h4jkrfherjkfhhkjhjkhjkhkjh', 'player', 'active', '2025-05-24 13:38:05'),
-(2, 'ksaljdklas', 'kacperkuiras@gdfs.com', 'Haslo/12', 'player', 'active', '2025-05-24 16:44:12'),
-(3, 'fhsdkjfh', 'hjghjg@gfd.sds', 'sjfhsdkjhf', 'player', 'active', '2025-05-24 16:54:24'),
-(4, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 16:55:01'),
-(5, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 16:56:48'),
-(6, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 16:58:35'),
-(7, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 16:58:59'),
-(8, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 16:59:36'),
-(9, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 17:00:02'),
-(10, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 17:00:04'),
-(11, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 17:00:04'),
-(12, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 17:00:05'),
-(13, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 17:00:05'),
-(14, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 17:00:05'),
-(15, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 17:00:06'),
-(16, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 17:00:06'),
-(17, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 17:01:16'),
-(18, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 17:01:40'),
-(19, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 17:01:45'),
-(20, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 17:01:53'),
-(21, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 17:02:35'),
-(22, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 17:03:00'),
-(23, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 17:03:21'),
-(24, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 17:03:30'),
-(25, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 17:03:46'),
-(26, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dsfjfklsd', 'player', 'active', '2025-05-24 17:03:47'),
-(27, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'ghghjg', 'player', 'active', '2025-05-24 17:04:02'),
-(28, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'ghghjg', 'player', 'active', '2025-05-24 17:04:10'),
-(29, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'ghghjg', 'player', 'active', '2025-05-24 17:05:52'),
-(30, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'ghghjg', 'player', 'active', '2025-05-24 17:06:11'),
-(31, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'ghghjg', 'player', 'active', '2025-05-24 17:08:43'),
-(32, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'ghghjg', 'player', 'active', '2025-05-24 17:13:20'),
-(33, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'ghghjg', 'player', 'active', '2025-05-24 17:14:01'),
-(34, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'ghghjg', 'player', 'active', '2025-05-24 17:14:21'),
-(35, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'ghghjg', 'player', 'active', '2025-05-24 17:15:03'),
-(36, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'ghghjg', 'player', 'active', '2025-05-24 17:15:40'),
-(37, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'ghghjg', 'player', 'active', '2025-05-24 17:16:29'),
-(38, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dfgdfgdfg', 'player', 'active', '2025-05-24 17:16:43'),
-(39, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dfgdfgdfg', 'player', 'active', '2025-05-24 17:16:59'),
-(40, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dgfdfgd', 'player', 'active', '2025-05-24 17:17:14'),
-(41, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dgfdfgd', 'player', 'active', '2025-05-24 17:17:48'),
-(42, 'dsklfjklsd', 'jfklsdj@jkl.kk', 'dgfdfgd', 'player', 'active', '2025-05-24 17:18:07'),
-(43, 'dsklfjklsddfgdfgd', 'jfklsdj@jkl.kk', 'fdfgdfgd', 'player', 'active', '2025-05-24 17:19:02'),
-(44, 'dsklfjklsddfgdfgd', 'jfklsdj@jkl.kk', 'fdfgdfgd', 'player', 'active', '2025-05-24 17:20:03'),
-(45, 'kapi982', 'kacperkuras558@gmail.com', '$argon2id$v=19$m=19456,t=2,p=1$KcdEAtFp9QNf40/+bQKK8Q$RTkd+jxAf2pNjQocWr9tRytfNBf3Il5ZyoVrirXBkZE', 'player', 'active', '2025-05-24 17:54:15'),
-(46, 'fsdhfjksd', 'kacper1434@GFDG.GDF', '$argon2id$v=19$m=19456,t=2,p=1$/42JOWBKJ0s3ZDhtZq+gGw$10392LwYi8l3NQVBr5qH7iuZc7BUq6hSjTSVMQjpB9Y', 'player', 'active', '2025-05-24 22:27:45'),
-(47, 'kjkljkljkljkljkl', 'kamilkuras19@gmail.com', '$argon2id$v=19$m=19456,t=2,p=1$tMxpPAaDEvplBFVrLb1/6g$0yLoZvsAb3PZbQCsA7JghXGHjI8c47Ca6wOmvWcD1J0', 'player', 'active', '2025-05-24 22:30:55'),
-(48, 'kapie9823', 'kasdksd@fd.csa', '$argon2id$v=19$m=19456,t=2,p=1$Q5yW76ujyCKYT9ooXcntMQ$SV9iVk6nGTvuMK5y1RMKJrruQSKH9t2hIec5nBQtymQ', 'player', 'active', '2025-05-24 23:31:36'),
-(49, 'fjsdklfjsdklfjwkfw', 'fhgjkfdhgjk@jfdhgjk.fsd', '$argon2id$v=19$m=19456,t=2,p=1$3qK70V/8dxV9Z9x4cKsvgw$rWLjjL+0JttPidC17+10joDjzIR/XC8rY1jtF4zZ/NU', 'player', 'active', '2025-05-24 23:36:15'),
-(50, 'fjsklf', 'fhgfdhgjk@jfdjk.fsd', '$argon2id$v=19$m=19456,t=2,p=1$FoTw3VyjAunYQ+7ZLu3WPA$AsgGuzhrYZoNhCu5r4ibZ4EE4cJ9WNtqmtWUwnZI9ck', 'player', 'active', '2025-05-24 23:36:38'),
-(51, 'fjghjkwccg1234', 'jkjklj@gdfgf.vdffd', '$argon2id$v=19$m=19456,t=2,p=1$J2hXcQIC/ZJ77t8zKAF9IQ$pnm+N05DNvHPiywehl2WPEwgK5E2iCTLD+GNnRlm3/w', 'player', 'active', '2025-05-24 23:37:12'),
-(52, 'aaaaaa', 'aaa@a.com', '$argon2id$v=19$m=19456,t=2,p=1$vso6o9YJ9RgYx7tu4nSoCQ$FCFUp/HDSmWUvp33IBbo/HGRqnJu+94IEnupIcrsUc8', 'player', 'active', '2025-05-29 17:37:47'),
-(53, 'test1', 'test1@gmail.com', '$argon2id$v=19$m=19456,t=2,p=1$lmZJTxuECF3NLjn99ZWgFQ$AdvCfzrdeCVJEZdNcA/etbZ3G8CRHHKIbGNcn3fJv8M', 'player', 'active', '2025-05-30 19:19:43'),
-(54, 'test2', 'test2@gmial.com', '$argon2id$v=19$m=19456,t=2,p=1$weif4kO5n+8OA8YnvHNrgA$H7xf7B19r2FFJu+HBswQ5Xgg2VNlTRaIkpwnAYyBbG8', 'player', 'active', '2025-05-30 19:21:05'),
-(55, 'test3', 'test3@gmial.com', '$argon2id$v=19$m=19456,t=2,p=1$EQ2HMg7Hr7gkK1vYxCkDDA$r1guPO80gnRL/UmtRKOJ8nP9KZfD2W3VhMY9DEf29VA', 'player', 'active', '2025-05-30 19:21:20'),
-(56, 'test4', 'test4@gmial.com', '$argon2id$v=19$m=19456,t=2,p=1$fSXH2+suuAmxF21hKzsB3w$gv+j5omzS+EAmqiefdbx5x9WkchELIXUlDk1q9MyYY8', 'player', 'active', '2025-05-30 19:22:46'),
-(57, 'test5', 'test5@gmial.com', '$argon2id$v=19$m=19456,t=2,p=1$er6ABatVc5Vz29qzyMkPAg$6ijyCPuUOsJm2dN2KsIYUygHJaFuxWlt68/seb/+dws', 'player', 'active', '2025-05-30 19:22:57'),
-(58, 'test6', 'test6@gmial.com', '$argon2id$v=19$m=19456,t=2,p=1$QWV7Qzf8iGI1MSNH0AMuJQ$DAANUCNDB2FoQtzuz5xd5U8/XN1iLa+8Bi035GF+ljE', 'player', 'active', '2025-05-30 19:23:10');
+LOCK TABLES `users` WRITE;
+/*!40000 ALTER TABLE `users` DISABLE KEYS */;
+INSERT INTO `users` VALUES (61,'macius2010','1@x.com','$argon2id$v=19$m=19456,t=2,p=1$9dSHLRbypAwNgX4wwsJjwg$jEJJVZ0MiQXVxcyAw/2zWrofGW9+14kBe3lmzYJb2no','player','active','2025-06-16 20:17:22'),(62,'rafalek2012','2@x.com','$argon2id$v=19$m=19456,t=2,p=1$jchnHyZW6aD3gS6KBUM+oQ$3pp5Kwbu5sTuwbY7CJud3i2suq0QMJbLkXdgmfytX8Y','player','active','2025-06-16 20:18:11');
+/*!40000 ALTER TABLE `users` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
---
--- Indeksy dla zrzutów tabel
---
-
---
--- Indeksy dla tabeli `statistics`
---
-ALTER TABLE `statistics`
-  ADD PRIMARY KEY (`user_id`);
-
---
--- Indeksy dla tabeli `users`
---
-ALTER TABLE `users`
-  ADD PRIMARY KEY (`id`);
-
---
--- AUTO_INCREMENT for dumped tables
---
-
---
--- AUTO_INCREMENT for table `users`
---
-ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
-
---
--- Constraints for dumped tables
---
-
---
--- Constraints for table `statistics`
---
-ALTER TABLE `statistics`
-  ADD CONSTRAINT `statistics_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
-COMMIT;
-
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2025-06-17  4:31:49

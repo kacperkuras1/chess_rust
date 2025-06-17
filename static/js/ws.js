@@ -1,6 +1,3 @@
-// let btn = document.getElementById('btnSend');
-// btn.addEventListener('click', sendMessage);
-
 let ws = null;
 
 fetch("/get_jwt")
@@ -13,7 +10,6 @@ fetch("/get_jwt")
   .then(data => {
     const token = data.token;
 
-    // "joinujemy" WebSocket dopiero po otrzymaniu tokena
     ws = new WebSocket(`ws://localhost:8080/ws/${token}`);
 
     ws.onopen = () => {
@@ -23,16 +19,16 @@ fetch("/get_jwt")
     ws.onmessage = (event) => {
       console.log("Otrzymano wiadomość:", event.data);
       let message_json = JSON.parse(event.data);
-      if (message_json.msg_type === "move"){
-      let move = message_json.from + "-" + message_json.to;
-      game.move({
-        from: message_json.from,
-        to: message_json.to,
-        promotion: 'q'
-      });
-      canDrag = true;
-      renderMovesFromPGN(game.pgn());
-      board.move(move);
+      if (message_json.msg_type === "move") {
+        let move = message_json.from + "-" + message_json.to;
+        game.move({
+          from: message_json.from,
+          to: message_json.to,
+          promotion: 'q'
+        });
+        canDrag = true;
+        renderMovesFromPGN(game.pgn());
+        board.move(move);
       }
       else if (message_json.msg_type === "chat") {
         get_message(message_json.message);
@@ -87,23 +83,3 @@ fetch("/get_jwt")
   });
 
 
-
-// function sendMessage() {
-//   console.log("Wysyłanie wiadomości...");
-//   const input = document.getElementById("msg");
-//   const text = input.value;
-//   const move = {
-    // from: "e2",
-    // to: "e4"
-//   };
-//   ws.send(JSON.stringify(move));
-//   console.log("Wysyłam JSON:", JSON.stringify(move));
-//   log("Wysłano: " + text);
-//   input.value = "";
-// }
-
-// function log(msg) {
-//   const pre = document.getElementById("log");
-//   pre.textContent += msg + "\n";
-// }
-// console.log("Chessboard initialized.");

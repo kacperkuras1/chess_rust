@@ -44,3 +44,18 @@ pub struct User{
     pub status: String,
     pub created_at: Option<DateTime<Utc>>,
 }
+
+#[derive(sqlx::FromRow, Debug, Serialize)]
+pub struct GameSummary {
+    pub game_id: Option<i64>,
+    pub game_type: Option<String>,
+    pub player_color: Option<String>,
+    pub username: Option<String>,
+    pub elo: i32,
+    pub opponent_username: Option<String>,
+    pub opponent_elo: i32,
+    pub move_count: Option<i64>,
+    pub duration: Option<String>,
+    pub started_at: DateTime<Utc>,
+    pub result: Option<String>
+}

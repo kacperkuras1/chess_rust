@@ -1,0 +1,29 @@
+main {
+    text-align: center;
+}
+
+h1 {
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: #00c676;
+    margin-bottom: 24px;
+    text-align: center;
+    display: block;
+    margin: auto;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn {
+    background-color: #00c676;
+    color: #111;
+    font-weight: 600;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0, 198, 118, 0.7);
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    margin: auto;
+    margin-top: 30px;
+}

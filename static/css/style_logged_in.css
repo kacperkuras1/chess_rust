@@ -125,7 +125,6 @@ body {
     flex-shrink: 0;
 }
 
-/* User dropdown */
 .user-dropdown {
     display: none;
     position: absolute;

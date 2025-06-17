@@ -20,12 +20,20 @@ pub enum GameStatus {
     Ended,
 }
 
-pub struct Game {
-    pub white: Player,
-    pub black: Player,
-    pub board: Board,
-    pub status: GameStatus,
+impl GameStatus{
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            GameStatus::Waiting => "waiting",
+            GameStatus::InProgress => "in_progress",
+            GameStatus::WhiteWin => "white_win",
+            GameStatus::BlackWin => "black_win",
+            GameStatus::Draw => "draw",
+            GameStatus::Ended => "ended",
+        }
+    }
 }
+
+
 
 pub enum MoveOutcome {
     Ok,
@@ -33,13 +41,24 @@ pub enum MoveOutcome {
     Stalemate,
 }
 
+pub struct Game {
+    pub game_id: i32,
+    pub white: Player,
+    pub black: Player,
+    pub board: Board,
+    pub move_number: i32,
+    pub status: GameStatus,
+}
+
 impl Game {
 
-    pub fn new(white: Player, black: Player) -> Self {
+    pub fn new(game_id: i32, white: Player, black: Player) -> Self {
         Game {
+            game_id,
             white,
             black,
             board: Board::default(),
+            move_number: 1,
             status: GameStatus::InProgress,
         }
     }

@@ -1,8 +1,10 @@
+use actix::fut::{ActorFutureExt, wrap_future};
 use actix::prelude::*;
 use actix::{Actor, Addr, AsyncContext, Handler, Message, StreamHandler};
 use actix_session::{Session, SessionExt};
 use actix_web::{HttpRequest, HttpResponse, error::ErrorUnauthorized, get, web};
 use actix_web_actors::ws;
+use argon2::password_hash::rand_core::le;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::MySqlPool;
@@ -16,13 +18,17 @@ use crate::game::{Game, GameState, GameStatus, Player, SharedGameState};
 use crate::models::{User, UserStatistics};
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(tag = "msg_type")] // "tag" wybiera wariant wg pola "msg_type"
+#[serde(tag = "msg_type")]
 enum ClientMessage {
     #[serde(rename = "move")]
-    Move { from: String, to: String },
+    Move {
+        from: String,
+        to: String,
+        pgn: String,
+    },
     #[serde(rename = "chat")]
     Chat { message: String },
-    // Możesz dodać więcej wariantów np.:
+
     #[serde(other)]
     Unknown,
 }
@@ -34,7 +40,8 @@ pub struct ChessSession {
     pub user_id: i32,
     pub username: String,
     pub elo: i32,
-    game_state: SharedGameState,
+    pub game_state: SharedGameState,
+    pub db_pool: MySqlPool,
 }
 
 impl Actor for ChessSession {
@@ -48,7 +55,6 @@ impl Actor for ChessSession {
             self.user_id, self.elo
         );
 
-        // Tworzymy nowego gracza
         let new_player = Player {
             user_id: self.user_id,
             username: self.username.clone(),
@@ -56,48 +62,56 @@ impl Actor for ChessSession {
             addr: addr.clone(),
         };
 
-        let mut state = self.game_state.lock().unwrap();
+        let game_state = self.game_state.clone();
+        let db_pool = self.db_pool.clone();
 
-        // Czy ktoś już czeka?
-        if let Some(opponent) = state.queue.pop() {
-            // Stwórz nową grę
-            let game = Game::new(opponent.clone(), new_player.clone());
+        actix::spawn(async move {
+            let mut state = game_state.lock().unwrap();
 
-            state.games.push(game);
+            if let Some(opponent) = state.queue.pop() {
+                let game_id =
+                    match db::create_game(&db_pool, opponent.user_id, new_player.user_id).await {
+                        Ok(id) => id,
+                        Err(e) => {
+                            println!("Błąd przy zapisie gry do DB: {:?}", e);
+                            return;
+                        }
+                    };
 
-            // Wyślij obu graczom informację o starcie gry
-            let start_msg = serde_json::json!({
-                "msg_type": "game_status",
-                "status": "playing",
-                "color": "white",
-                "opponent_username": new_player.username,
-                "opponent_elo": new_player.elo,
-            })
-            .to_string();
-            opponent.addr.do_send(IncomingMessage(start_msg));
+                let game = Game::new(game_id, opponent.clone(), new_player.clone());
+                state.games.push(game);
 
-            let start_msg = serde_json::json!({
-                "msg_type": "game_status",
-                "status": "playing",
-                "color": "black",
-                "opponent_username": opponent.username,
-                "opponent_elo": opponent.elo,
-            })
-            .to_string();
-            addr.do_send(IncomingMessage(start_msg));
-        } else {
-            // Nikt nie czeka — dodaj do kolejki
-            state.queue.push(new_player);
+                let start_msg_white = serde_json::json!({
+                    "msg_type": "game_status",
+                    "status": "playing",
+                    "color": "white",
+                    "opponent_username": new_player.username,
+                    "opponent_elo": new_player.elo,
+                })
+                .to_string();
+                opponent.addr.do_send(IncomingMessage(start_msg_white));
 
-            let waiting_msg = serde_json::json!({
-                "msg_type": "game_status",
-                "status": "waiting",
-            })
-            .to_string();
-            ctx.text(waiting_msg);
-        }
+                let start_msg_black = serde_json::json!({
+                    "msg_type": "game_status",
+                    "status": "playing",
+                    "color": "black",
+                    "opponent_username": opponent.username,
+                    "opponent_elo": opponent.elo,
+                })
+                .to_string();
+                addr.do_send(IncomingMessage(start_msg_black));
+            } else {
+                state.queue.push(new_player);
 
-        // Ping co 10 sek.
+                let waiting_msg = serde_json::json!({
+                    "msg_type": "game_status",
+                    "status": "waiting",
+                })
+                .to_string();
+                addr.do_send(IncomingMessage(waiting_msg));
+            }
+        });
+
         ctx.run_interval(Duration::from_secs(10), |_, ctx| {
             ctx.ping(b"");
         });
@@ -108,10 +122,8 @@ impl Actor for ChessSession {
 
         println!("Gracz {} rozłączył się", self.user_id);
 
-        // 1. Usuń z kolejki (jeśli tam był)
         state.queue.retain(|p| p.user_id != self.user_id);
 
-        // 2. Znajdź grę, w której uczestniczył
         if let Some(index) = state
             .games
             .iter()
@@ -119,14 +131,12 @@ impl Actor for ChessSession {
         {
             let game = state.games.remove(index);
 
-            // 3. Ustal kto był przeciwnikiem
             let opponent = if game.white.user_id == self.user_id {
                 game.black
             } else {
                 game.white
             };
 
-            // 4. Wyślij przeciwnikowi wiadomość o zakończeniu gry
             let info = json!({
                 "msg_type": "game_status",
                 "status": "win",
@@ -136,7 +146,6 @@ impl Actor for ChessSession {
                 opponent.addr.do_send(IncomingMessage(msg_str));
             }
 
-            // (opcjonalnie: log)
             println!("Gracz {} rozłączył się, gra zakończona", self.user_id);
         }
     }
@@ -158,7 +167,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ChessSession {
                 }
 
                 match parsed.unwrap() {
-                    ClientMessage::Move { from, to } => {
+                    ClientMessage::Move { from, to, pgn } => {
                         let mut state = self.game_state.lock().unwrap();
 
                         if let Some(game) = state.games.iter_mut().find(|g| {
@@ -180,8 +189,76 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ChessSession {
 
                                     opponent.addr.do_send(IncomingMessage(msg.to_string()));
 
-                                    // Sprawdź status gry po ruchu
+                                    let player_color = if game.white.user_id == self.user_id {
+                                        "white"
+                                    } else {
+                                        "black"
+                                    };
+
+                                    let db_pool = self.db_pool.clone();
+                                    let game_id = game.game_id;
+                                    let player_color_owned = player_color.to_string();
+                                    let pgn = pgn.clone();
+
+                                    let move_number = game.move_number;
+
+                                    ctx.spawn(
+                                        wrap_future(async move {
+                                            db::add_move_to_game(
+                                                &db_pool,
+                                                game_id,
+                                                &player_color_owned,
+                                                move_number,
+                                                &pgn,
+                                            )
+                                            .await
+                                        })
+                                        .then(
+                                            |res, _actor, _ctx| {
+                                                if let Err(e) = res {
+                                                    eprintln!(
+                                                        "Błąd dodawania ruchu do DB: {:?}",
+                                                        e
+                                                    );
+                                                }
+                                                actix::fut::ready(())
+                                            },
+                                        ),
+                                    );
+
+                                    if player_color == "black" {
+                                        game.move_number += 1;
+                                    }
+
                                     if game.status != GameStatus::InProgress {
+                                        let db_pool = self.db_pool.clone();
+                                        let game_id = game.game_id;
+                                        let result = game.status.clone();
+                                        let white_player_id = game.white.user_id;
+                                        let black_player_id = game.black.user_id;
+
+                                        // ctx.spawn(db::end_game(&db_pool, game_id, &result));
+                                        // ctx.spawn(db::update_users_statistics(&db_pool, white_player_id, black_player_id, &game.status));
+
+                                        ctx.spawn(
+                                        wrap_future({
+                                                async move {
+                                                    if let Err(e) = db::end_game(&db_pool, game_id, &result).await {
+                                                        eprintln!("Błąd kończenia gry w DB: {:?}", e);
+                                                    }
+
+                                                    if let Err(e) = db::update_users_statistics(&db_pool, white_player_id, black_player_id, &result).await {
+                                                        eprintln!("Błąd aktualizacji statystyk użytkowników: {:?}", e);
+                                                    }
+                                                    Ok::<(), ()>(())
+                                                }
+                                            })
+                                            .then(|_res, _actor, _ctx| {
+                                                actix::fut::ready(())
+                                            }),
+                                        );
+
+
                                         let (white_msg, black_msg) = match game.status {
                                             GameStatus::WhiteWin => (
                                                 json!({ "msg_type": "game_status", "status": "win" }),
@@ -195,7 +272,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ChessSession {
                                                 json!({ "msg_type": "game_status", "status": "draw" }),
                                                 json!({ "msg_type": "game_status", "status": "draw" }),
                                             ),
-                                            _ => return, // nie powinno się zdarzyć
+                                            _ => return,
                                         };
 
                                         game.white
@@ -252,10 +329,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ChessSession {
             }
 
             ws::Message::Ping(msg) => ctx.pong(&msg),
+
             ws::Message::Close(reason) => {
                 ctx.close(reason);
                 ctx.stop();
             }
+
             _ => {}
         }
     }
@@ -276,20 +355,6 @@ async fn websocket_handler(
     db_pool: web::Data<MySqlPool>,
     data: web::Data<SharedGameState>,
 ) -> actix_web::Result<HttpResponse> {
-    print!("WebSocket connection request received\n");
-
-    // let session = req.get_session();
-
-    print!("HOW TO KILL MYSELF");
-
-    // if session.get::<i32>("user_id").unwrap().is_none() {
-    // print!("RUCHAM CI MATKETY KURWA JEBANEA");
-    // return Ok(HttpResponse::Unauthorized().finish());
-    // }
-
-    print!("CHUJJJJJJJJJJJJJJJJJJJJ");
-
-    // let user_id = session.get::<i32>("user_id").unwrap().unwrap();
     let token = path.into_inner();
 
     let user_id: i32;
@@ -315,6 +380,7 @@ async fn websocket_handler(
                 username: user.unwrap().unwrap().username,
                 elo: stats.elo,
                 game_state: data.get_ref().clone(),
+                db_pool: db_pool.get_ref().clone(),
             };
             match ws::start(ws, &req, stream) {
                 Ok(resp) => {
