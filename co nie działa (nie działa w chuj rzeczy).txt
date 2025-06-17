@@ -4,6 +4,8 @@ pgn który jest wysyłany do bazy danych jest z forntedu(trzbe zmienić żeby by
 
 jak gra się skończy i ktoś się rozłączy to i tak dla przegranego wysle że wygrał
 
+promocja nie dziła bo nie wysłam na co jest promocja i zwraca invalid move
+
 SELECT
       CAST(g.id AS SIGNED) AS game_id,
       g.game_type,
