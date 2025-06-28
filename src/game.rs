@@ -20,6 +20,8 @@ pub enum GameStatus {
     Ended,
 }
 
+
+
 impl GameStatus{
     pub fn as_str(&self) -> &'static str {
         match self {
@@ -34,12 +36,6 @@ impl GameStatus{
 }
 
 
-
-pub enum MoveOutcome {
-    Ok,
-    Checkmate(Color),
-    Stalemate,
-}
 
 pub struct Game {
     pub game_id: i32,
@@ -103,6 +99,25 @@ impl Game {
             Err(("Nielegalny ruch", self.board.to_string()))
         }
     }
+}
+
+pub fn calculate_elo_changes(white_elo: i32, black_elo: i32, result: &GameStatus) -> (i32, i32) {
+    let k = 32.0; //nazazie stały ale to do zmmiany w zależności od rankingu
+
+    let expected_white = 1.0 / (1.0 + 10f64.powf(((black_elo - white_elo) as f64) / 400.0));
+    let expected_black = 1.0 / (1.0 + 10f64.powf(((white_elo - black_elo) as f64) / 400.0));
+
+    let (score_white, score_black) = match result {
+        GameStatus::WhiteWin => (1.0, 0.0),
+        GameStatus::BlackWin => (0.0, 1.0),
+        GameStatus::Draw => (0.5, 0.5),
+        _ => (0.0, 0.0),
+    };
+
+    let white_change = (k * (score_white - expected_white)).round() as i32;
+    let black_change = (k * (score_black - expected_black)).round() as i32;
+
+    (white_change, black_change)
 }
 
 

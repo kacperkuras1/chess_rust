@@ -69,14 +69,21 @@ impl Actor for ChessSession {
             let mut state = game_state.lock().unwrap();
 
             if let Some(opponent) = state.queue.pop() {
-                let game_id =
-                    match db::create_game(&db_pool, opponent.user_id, new_player.user_id).await {
-                        Ok(id) => id,
-                        Err(e) => {
-                            println!("Błąd przy zapisie gry do DB: {:?}", e);
-                            return;
-                        }
-                    };
+                let game_id = match db::create_game(
+                    &db_pool,
+                    opponent.user_id,
+                    new_player.user_id,
+                    opponent.elo,
+                    new_player.elo,
+                )
+                .await
+                {
+                    Ok(id) => id,
+                    Err(e) => {
+                        println!("Błąd przy zapisie gry do DB: {:?}", e);
+                        return;
+                    }
+                };
 
                 let game = Game::new(game_id, opponent.clone(), new_player.clone());
                 state.games.push(game);
@@ -129,22 +136,40 @@ impl Actor for ChessSession {
             .iter()
             .position(|g| g.white.user_id == self.user_id || g.black.user_id == self.user_id)
         {
-            let game = state.games.remove(index);
+            let mut game = state.games.remove(index);
 
-            let opponent = if game.white.user_id == self.user_id {
-                game.black
-            } else {
-                game.white
-            };
-
-            let info = json!({
-                "msg_type": "game_status",
-                "status": "win",
-            });
-
-            if let Ok(msg_str) = serde_json::to_string(&info) {
-                opponent.addr.do_send(IncomingMessage(msg_str));
+            if game.status == GameStatus::InProgress {
+                if game.white.user_id == self.user_id {
+                    game.status = GameStatus::BlackWin;
+                    game.black.addr.do_send(IncomingMessage(
+                        json!({ "msg_type": "game_status", "status": "win" }).to_string(),
+                    ));
+                } else {
+                    game.status = GameStatus::WhiteWin;
+                    game.white.addr.do_send(IncomingMessage(
+                        json!({ "msg_type": "game_status", "status": "win" }).to_string(),
+                    ));
+                }
             }
+
+            let db_pool = self.db_pool.clone();
+            let game_id = game.game_id;
+            let result = game.status.clone();
+            let white_player_id = game.white.user_id;
+            let black_player_id = game.black.user_id;
+
+            actix::spawn(async move {
+                if let Err(e) = db::end_game(&db_pool, game_id, &result).await {
+                    eprintln!("Błąd kończenia gry w DB: {:?}", e);
+                }
+
+                if let Err(e) =
+                    db::update_users_statistics(&db_pool, white_player_id, black_player_id, &result)
+                        .await
+                {
+                    eprintln!("Błąd aktualizacji statystyk użytkowników: {:?}", e);
+                }
+            });
 
             println!("Gracz {} rozłączył się, gra zakończona", self.user_id);
         }
@@ -258,7 +283,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ChessSession {
                                             }),
                                         );
 
-
                                         let (white_msg, black_msg) = match game.status {
                                             GameStatus::WhiteWin => (
                                                 json!({ "msg_type": "game_status", "status": "win" }),
@@ -310,6 +334,31 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ChessSession {
                             } else {
                                 &game.white
                             };
+
+                            let db_pool = self.db_pool.clone();
+                            let game_id = state
+                                .games
+                                .iter()
+                                .find(|g| {
+                                    g.white.user_id == self.user_id
+                                        || g.black.user_id == self.user_id
+                                })
+                                .map(|g| g.game_id);
+                            let chat_message = message.clone();
+                            let sender_id = self.user_id;
+
+                            ctx.spawn(
+                                wrap_future(async move {
+                                    db::add_chat_message(&db_pool, game_id.unwrap(), sender_id, &chat_message)
+                                        .await
+                                })
+                                .then(|res, _actor, _ctx| {
+                                    if let Err(e) = res {
+                                        eprintln!("Błąd dodawania wiadomości do DB: {:?}", e);
+                                    }
+                                    actix::fut::ready(())
+                                }),
+                            );
 
                             let msg = json!({
                                 "msg_type": "chat",

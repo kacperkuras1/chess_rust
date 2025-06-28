@@ -2,8 +2,6 @@ use argon2::{password_hash::{rand_core::OsRng, PasswordHasher, PasswordHash, Sal
 use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey, TokenData, errors::Result as JwtResult};
 use serde::{Serialize, Deserialize};
 use chrono::{Utc, Duration};
-use actix_web::{dev::Payload, Error, FromRequest, HttpRequest};
-use futures::future::{ready, Ready};
 
 const SECRET_KEY: &[u8] = b"mega_super_secret_key_1234567890";
 

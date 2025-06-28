@@ -3,6 +3,13 @@ const home_btn = document.getElementById("overlay-home-button");
 
 const chat_form = document.getElementById('chatForm');
 
+window.addEventListener("beforeunload", (event) => {
+  if (gameInProgress) {
+    event.preventDefault();
+    event.returnValue = "Czy na pewno chcesz opuścić grę? Gra zostanie uznana za przegraną.";
+  }
+});
+
 function showOverlay(type) {
     const overlay = document.getElementById("game-overlay");
     const title = document.getElementById("overlay-title");

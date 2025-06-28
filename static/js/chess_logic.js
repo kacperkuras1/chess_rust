@@ -1,6 +1,7 @@
 
 const game = new Chess()
 let canDrag = false;
+let gameInProgress = false;
 
 const config = {
   draggable: true,

@@ -1,5 +1,6 @@
 let ws = null;
 
+
 fetch("/get_jwt")
   .then(res => {
     if (!res.ok) {
@@ -40,6 +41,7 @@ fetch("/get_jwt")
             showOverlay("waiting");
             break;
           case "playing":
+            gameInProgress = true;
             board.orientation(message_json.color);
             game.clear();
             board.position('start');
@@ -52,12 +54,15 @@ fetch("/get_jwt")
             document.getElementById("opponent-name").innerHTML = message_json.opponent_username + " (" + message_json.opponent_elo + ")";
             break;
           case "win":
+            gameInProgress = false;
             showOverlay("win");
             break;
           case "lose":
+            gameInProgress = false;
             showOverlay("lose");
             break;
           case "draw":
+            gameInProgress = false;
             showOverlay("draw");
             break;
         }

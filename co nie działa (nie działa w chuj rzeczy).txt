@@ -1,59 +1,30 @@
-nie są aktulaizowane statystyki graczy
+//data w statystykach fomratownaie
+
+//nie są aktulaizowane statystyki graczy
+
+//do historii gier elo takie jak mieli podczas gry a nie akutlane (dużo zmian )(jednak nie było tak dużo za dobry kod napiasałem żeby był problem ze zmainą czegoś)
+
+poukładać ws.rs (tam jest taki syf że japierdole nie da się na to patrzeć(na moje usprawiedliwnie kod nie nie jest jakiś prosty))
+
+dodać profilowe
+
+inne opcje logowania
+
+pokazuje złą godzinie w statystykach jeśli chodzi o ostanią grę (w bazie danych jest dobrze)
 
 pgn który jest wysyłany do bazy danych jest z forntedu(trzbe zmienić żeby były z backendu)
 
-jak gra się skończy i ktoś się rozłączy to i tak dla przegranego wysle że wygrał
+//jak gra się skończy i ktoś się rozłączy to i tak dla przegranego wysle że wygrał i nie są updateowane statystyki
 
-promocja nie dziła bo nie wysłam na co jest promocja i zwraca invalid move
+Zapisywanie chatu i w którym momencie gry została napisana wiadomość i wyświtlić cały chat podczas przeglądania parti
 
-SELECT
-      CAST(g.id AS SIGNED) AS game_id,
-      g.game_type,
-      CASE
-        WHEN g.white_player_id = ? THEN 'white'
-        ELSE 'black'
-      END AS player_color,
-      u.username AS username,
-      s.elo AS elo,
-      ou.username AS opponent_username,
-      os.elo AS opponent_elo,
-      (
-        SELECT COUNT(*) FROM moves m WHERE m.game_id = g.id
-      ) AS move_count,
-      CASE
-    WHEN TIMESTAMPDIFF(SECOND, g.started_at, g.ended_at) >= 3600 THEN
-      CONCAT(
-        FLOOR(TIMESTAMPDIFF(SECOND, g.started_at, g.ended_at) / 3600), 'h ',
-        FLOOR((TIMESTAMPDIFF(SECOND, g.started_at, g.ended_at) % 3600) / 60), 'm ',
-        TIMESTAMPDIFF(SECOND, g.started_at, g.ended_at) % 60, 's'
-      )
-    WHEN TIMESTAMPDIFF(SECOND, g.started_at, g.ended_at) >= 60 THEN
-      CONCAT(
-        FLOOR(TIMESTAMPDIFF(SECOND, g.started_at, g.ended_at) / 60), 'm ',
-        TIMESTAMPDIFF(SECOND, g.started_at, g.ended_at) % 60, 's'
-      )
-    ELSE
-      CONCAT(
-        TIMESTAMPDIFF(SECOND, g.started_at, g.ended_at), 's'
-      )
-  END AS duration,
-      g.started_at,
-      CASE
-        WHEN g.result = 'draw' THEN 'draw'
-        WHEN (g.result = 'white_win' AND g.white_player_id = ?) OR
-             (g.result = 'black_win' AND g.black_player_id = ?) THEN 'win'
-        ELSE 'lose'
-      END AS result
-    FROM games g
-    JOIN users u ON (u.id = ?)
-    JOIN statistics s ON (s.user_id = u.id)
-    JOIN users ou ON (
-      ou.id = CASE
-        WHEN g.white_player_id = ? THEN g.black_player_id
-        ELSE g.white_player_id
-      END
-    )
-    JOIN statistics os ON (os.user_id = ou.id)
-    WHERE (g.white_player_id = ? OR g.black_player_id = ?)
-      AND g.status = 'finished'
-    ORDER BY g.started_at DESC
+
+Zrobić tak że z backendu nie jest wysłany ruch tylko cały ten i sprawdzić czy chess.js dobrze to odbierze do generowania pgn
+
+Naprawić to że jak ruch jest  nie poprawny to faktycznie cofa bo teraz się blokuje i nie można zrobic róchów pewnie przez to że nie ustawiam can drag na true
+
+
+Overlay nie jest na cały ekran
+
+
+jak zloguje się ktoś na konto na 2 przeglądarkach i da zagraj to gra sam ze sobą nie da się grać ale gra wystatuje 

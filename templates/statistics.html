@@ -59,7 +59,7 @@ Szachy | Statystyki
                 <div class="label">Ostatnia gra</div>
                 <div class="value">
                     {% if user_statistics.last_game_at %}
-                        {{ user_statistics.last_game_at }}
+                        {{ user_statistics.last_game_at | date(format="%H:%M %d.%m.%Y") }}
                     {% else %}
                         Brak gier
                     {% endif %}
